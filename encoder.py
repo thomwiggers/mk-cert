@@ -1,29 +1,102 @@
 import asn1
 from datetime import datetime, timedelta
 import subprocess
+import base64
+from io import BytesIO
 
 import itertools
+
+sphincs_variants = list(itertools.product(
+            ['sha256', 'shake256', 'haraka'],
+            ['128s', '128f', '192s', '192f', '256s', '256f'],
+            ['simple', 'robust']))
 
 oids = {
     var: i
     for (i, var) in enumerate(
         f"sphincs{hash}{size}{type}"
         for (hash, size, type)
-        in itertools.product(
-            ['sha256', 'shake256', 'haraka'],
-            ['128s', '128f', '192s', '192f', '256s', '256f'],
-            ['simple', 'robust']))
+        in sphincs_variants)
 }
 
 
+def public_key_der(algorithm, pk):
+    encoder = asn1.Encoder()
+    encoder.start()
+    write_public_key(encoder, algorithm, pk)
+    return encoder.output()
+
+
+def private_key_der(algorithm, sk):
+    encoder = asn1.Encoder()
+    encoder.start()
+    encoder.enter(asn1.Numbers.Sequence)
+    encoder.write(0, asn1.Numbers.Integer)
+    encoder.enter(asn1.Numbers.Sequence)  # AlgorithmIdentifier
+    # FIXME: This should be parameterized
+    oid = oids[algorithm]
+    encoder.write(f'1.2.6.1.4.1.311.89.2.{16128 + oid}',
+                  asn1.Numbers.ObjectIdentifier)
+    encoder.write(None)
+    encoder.leave()  # AlgorithmIdentifier
+    encoder.write(sk, asn1.Numbers.BitString)
+    encoder.leave()
+    return encoder.output()
+
+
+def write_pem(filename, label, data):
+    data = der_to_pem(data, label)
+    with open(filename, 'wb') as f:
+        f.write(data)
+
+
+def der_to_pem(data, label=b'CERTIFICATE'):
+    buf = BytesIO()
+    buf.write(b"-----BEGIN ")
+    buf.write(label)
+    buf.write(b"-----\n")
+
+    base64buf = BytesIO(base64.b64encode(data))
+    line = base64buf.read(64)
+    while line:
+        buf.write(line)
+        buf.write(b'\n')
+        line = base64buf.read(64)
+
+    buf.write(b"-----END ")
+    buf.write(label)
+    buf.write(b"-----\n")
+    return buf.getvalue()
+
+
+def get_alg_kind(algorithm):
+    if 'sphincs' in algorithm:
+        return 'sign'
+    elif 'mqdss' in algorithm:
+        return 'sign'
+
+
 def set_up_algorithm(algorithm):
+    if get_alg_kind(algorithm) == 'kem':
+        set_up_kem_algorithm(algorithm)
+    else:
+        set_up_sign_algorithm(algorithm)
+
+
+def set_up_sign_algorithm(algorithm):
     content = f"pub use pqcrypto::sign::{algorithm}::*;"
     with open('signutil/src/lib.rs', 'w') as f:
         f.write(content)
 
 
+def set_up_kem_algorithm(algorithm):
+    content = f"pub use pqcrypto::kem::{algorithm}::*;"
+    with open('kemutil/src/kem.rs', 'w') as f:
+        f.write(content)
+
+
 def run_cargo_example(example, *args):
-    subprocess.check_call(
+    subprocess.check_output(
         [*'cargo run --example'.split(), example, *args],
         cwd='signutil')
 
@@ -39,6 +112,19 @@ def get_keys():
 
 def print_date(time):
     return time.strftime("%y%m%d%H%M%SZ").encode()
+
+
+def write_public_key(encoder, algorithm, pk):
+    encoder.enter(asn1.Numbers.Sequence)  # SubjectPublicKeyInfo
+    encoder.enter(asn1.Numbers.Sequence)  # AlgorithmIdentifier
+    # FIXME: This should be parameterized
+    oid = oids[algorithm]
+    encoder.write(f'1.2.6.1.4.1.311.89.2.{16128 + oid}',
+                  asn1.Numbers.ObjectIdentifier)
+    encoder.write(None)
+    encoder.leave()  # AlgorithmIdentifier
+    encoder.write(pk, asn1.Numbers.BitString)
+    encoder.leave()
 
 
 def write_signature(encoder, algorithm, pk):
@@ -70,7 +156,7 @@ def write_signature_algorithm(encoder, algorithm):
     encoder.leave()  # Leave AlgorithmIdentifier
 
 
-def write_tbs_certificate(encoder, algorithm, pk):
+def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
     #  TBSCertificate  ::=  SEQUENCE  {
     #      version         [0]  EXPLICIT Version DEFAULT v1,
     #      serialNumber         CertificateSerialNumber,
@@ -117,16 +203,7 @@ def write_tbs_certificate(encoder, algorithm, pk):
     #    SubjectPublicKeyInfo  ::=  SEQUENCE  {
     #      algorithm            AlgorithmIdentifier,
     #      subjectPublicKey     BIT STRING  }
-    encoder.enter(asn1.Numbers.Sequence)  # SubjectPublicKeyInfo
-    encoder.enter(asn1.Numbers.Sequence)  # AlgorithmIdentifier
-    # FIXME: This should be parameterized
-    oid = oids[algorithm]
-    encoder.write(f'1.2.6.1.4.1.311.89.2.{16128 + oid}',
-                  asn1.Numbers.ObjectIdentifier)
-    encoder.write(None)
-    encoder.leave()  # AlgorithmIdentifier
-    encoder.write(pk, asn1.Numbers.BitString)
-    encoder.leave()
+    write_public_key(encoder, algorithm, pk)
 
     # issuerUniqueId
     # skip?
@@ -142,13 +219,23 @@ def write_tbs_certificate(encoder, algorithm, pk):
     encoder.leave()  # Extension 1
 
     # Extended Key Usage
-    encoder.enter(asn1.Numbers.Sequence)  # Extension 2
-    encoder.write('2.5.29.37', asn1.Numbers.ObjectIdentifier)
-    encoder.write(False, asn1.Numbers.Boolean)  # Critical
-    encoder.enter(asn1.Numbers.Sequence)  # Key Usages
-    encoder.write("1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier)
-    encoder.leave()  # Key Usages
-    encoder.leave()  # Extension 2
+    if not is_ca:
+        encoder.enter(asn1.Numbers.Sequence)  # Extension 2
+        encoder.write('2.5.29.37', asn1.Numbers.ObjectIdentifier)
+        encoder.write(False, asn1.Numbers.Boolean)  # Critical
+        encoder.enter(asn1.Numbers.Sequence)  # Key Usages
+        encoder.write("1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier)
+        encoder.leave()  # Key Usages
+        encoder.leave()  # Extension 2
+
+    encoder.enter(asn1.Numbers.Sequence)  # Extension CA
+    encoder.write('2.5.29.19', asn1.Numbers.ObjectIdentifier)  # BasicConstr
+    encoder.write(True, asn1.Numbers.Boolean)  # Critical
+    encoder.enter(asn1.Numbers.Sequence)  # Constraints
+    encoder.write(is_ca, asn1.Numbers.Boolean)  # cA = True
+    encoder.write(10, asn1.Numbers.Integer)  # Max path length
+    encoder.leave()  # Constraints
+    encoder.leave()  # BasicConstraints
 
     encoder.leave()  # Extensions
 
@@ -156,10 +243,17 @@ def write_tbs_certificate(encoder, algorithm, pk):
     encoder.leave()  # Leave TBSCertificate SEQUENCE
 
 
-def generate(algorithm):
-    set_up_algorithm(algorithm)
+def generate(pk_algorithm, sig_algorithm, filename, signing_key, ca=False):
+    set_up_algorithm(pk_algorithm)
 
     (pk, sk) = get_keys()
+    write_pem(f'{filename}.pub', b'PUBLIC KEY', public_key_der(algorithm, pk))
+    write_pem(f'{filename}.key', b'PRIVATE KEY',
+              private_key_der(algorithm, sk))
+    with open(f'{filename}.key.bin', 'wb') as f:
+        f.write(sk)
+
+    set_up_sign_algorithm(sig_algorithm)
 
     encoder = asn1.Encoder()
     encoder.start()
@@ -171,21 +265,25 @@ def generate(algorithm):
     #       signatureValue       BIT STRING  }
 
     encoder.enter(asn1.Numbers.Sequence)  # Certificate
-    write_tbs_certificate(encoder, algorithm, pk)
+    write_tbs_certificate(encoder, algorithm, pk, is_ca=ca)
     # Write signature algorithm
     write_signature_algorithm(encoder, algorithm)
     write_signature(encoder, algorithm, pk)
 
     encoder.leave()  # Leave Certificate SEQUENCE
 
-    with open(f'{algorithm}-cert.der', 'wb') as f:
-        f.write(encoder.output())
-    with open(f'{algorithm}.pub', 'wb') as f:
-        f.write(sk)
-    with open(f'{algorithm}.key', 'wb') as f:
-        f.write(sk)
+    write_pem(f'{filename}.crt', b'CERTIFICATE', encoder.output())
 
 
 if __name__ == "__main__":
-    for name in oids.keys():
-        generate(name)
+    for algorithm in oids.keys():
+        print(f"Generating keys for {algorithm}")
+        generate(algorithm, algorithm,
+                 f"{algorithm}-ca", f"{algorithm}-ca.key.bin", ca=True)
+        generate(algorithm, algorithm,
+                 f"{algorithm}", f"{algorithm}-ca.key.bin", ca=False)
+        with open(f"{algorithm}-chain.crt", 'wb') as f:
+            with open(f"{algorithm}.crt", 'rb') as cert:
+                f.write(cert.read())
+            with open(f"{algorithm}-ca.crt", 'rb') as cert:
+                f.write(cert.read())

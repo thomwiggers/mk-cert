@@ -1,1 +1,6 @@
 *.pyc
+*.bin
+*.pub
+*.key
+*.crt
+*.sig

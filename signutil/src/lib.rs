@@ -1,1 +1,1 @@
-pub use pqcrypto::sign::sphincsharaka256frobust::*;
+pub use pqcrypto::sign::sphincssha256128ssimple::*;
