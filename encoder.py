@@ -173,7 +173,9 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
     #            -- If present, version MUST be v3
     #  }
     encoder.enter(asn1.Numbers.Sequence)
+    encoder.enter(0, cls=asn1.Classes.Context)  # [0]
     encoder.write(2)  # version
+    encoder.leave()  # [0]
     encoder.write(1)  # serialnumber
 
     write_signature_algorithm(encoder, algorithm)
@@ -209,13 +211,19 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
     # skip?
 
     # Extensions
+    encoder.enter(3, cls=asn1.Classes.Context)  # [3]
     encoder.enter(asn1.Numbers.Sequence)  # Extensions
     encoder.enter(asn1.Numbers.Sequence)  # Extension 1
     encoder.write('2.5.29.17', asn1.Numbers.ObjectIdentifier)
     encoder.write(True, asn1.Numbers.Boolean)  # Critical
-    encoder.enter(asn1.Numbers.Sequence)  # Sequence of names
-    encoder.write(b'localhost', asn1.Numbers.IA5String)
-    encoder.leave()  # Sequence of names
+    extvalue = asn1.Encoder()
+    extvalue.start()
+    extvalue.enter(asn1.Numbers.Sequence)  # Sequence of names
+    extvalue._emit_tag(0x02, asn1.Types.Primitive, asn1.Classes.Context)
+    extvalue._emit_length(len(b'localhost'))
+    extvalue._emit(b'localhost')
+    extvalue.leave()  # Sequence of names
+    encoder.write(extvalue.output(), asn1.Numbers.OctetString)
     encoder.leave()  # Extension 1
 
     # Extended Key Usage
@@ -223,21 +231,26 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
         encoder.enter(asn1.Numbers.Sequence)  # Extension 2
         encoder.write('2.5.29.37', asn1.Numbers.ObjectIdentifier)
         encoder.write(False, asn1.Numbers.Boolean)  # Critical
-        encoder.enter(asn1.Numbers.Sequence)  # Key Usages
-        encoder.write("1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier)
-        encoder.leave()  # Key Usages
+        extvalue.start()
+        extvalue.enter(asn1.Numbers.Sequence)  # Key Usages
+        extvalue.write("1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier)
+        extvalue.leave()  # Key Usages
+        encoder.write(extvalue.output(), asn1.Numbers.OctetString)
         encoder.leave()  # Extension 2
 
     encoder.enter(asn1.Numbers.Sequence)  # Extension CA
     encoder.write('2.5.29.19', asn1.Numbers.ObjectIdentifier)  # BasicConstr
     encoder.write(True, asn1.Numbers.Boolean)  # Critical
-    encoder.enter(asn1.Numbers.Sequence)  # Constraints
-    encoder.write(is_ca, asn1.Numbers.Boolean)  # cA = True
-    encoder.write(10, asn1.Numbers.Integer)  # Max path length
-    encoder.leave()  # Constraints
+    extvalue.start()
+    extvalue.enter(asn1.Numbers.Sequence)  # Constraints
+    extvalue.write(is_ca, asn1.Numbers.Boolean)  # cA = True
+    extvalue.write(10, asn1.Numbers.Integer)  # Max path length
+    extvalue.leave()  # Constraints
+    encoder.write(extvalue.output(), asn1.Numbers.OctetString)
     encoder.leave()  # BasicConstraints
 
     encoder.leave()  # Extensions
+    encoder.leave()  # [3]
 
     # Done
     encoder.leave()  # Leave TBSCertificate SEQUENCE
@@ -248,7 +261,7 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, ca=False):
 
     (pk, sk) = get_keys()
     write_pem(f'{filename}.pub', b'PUBLIC KEY', public_key_der(algorithm, pk))
-    write_pem(f'{filename}.key', b'PRIVATE KEY',
+    write_pem(f'{filename}.key', b'PRIVATE KEY', 
               private_key_der(algorithm, sk))
     with open(f'{filename}.key.bin', 'wb') as f:
         f.write(sk)
@@ -272,6 +285,8 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, ca=False):
 
     encoder.leave()  # Leave Certificate SEQUENCE
 
+    with open(f'{filename}.crt.bin', 'wb') as f:
+        f.write(encoder.output())
     write_pem(f'{filename}.crt', b'CERTIFICATE', encoder.output())
 
 

@@ -4,3 +4,4 @@
 *.key
 *.crt
 *.sig
+signutil/src/lib.rs

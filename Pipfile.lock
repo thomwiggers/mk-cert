@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c4f94c830c7fb06471acae6f9da0a33acb0382122b91bb92017b3d0187c02bc2"
+            "sha256": "c26a2d91134d241cb413581c0d8bc067233e285bfc70de9f231b93dce96b77ea"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,12 +17,17 @@
     },
     "default": {
         "asn1": {
+            "editable": true,
+            "path": "./../python-asn1"
+        },
+        "enum34": {
             "hashes": [
-                "sha256:5a0cc798ae21313260a53fda7d76b45a86d72a93c58eb218b2713765ce8bf3c7",
-                "sha256:f856c475719b93a240b89f457c4da8a7f2b6f1cca82acd0fabe6b7e2adfcb3cb"
+                "sha256:2d81cbbe0e73112bdfe6ef8576f2238f2ba27dd0d55752a776c41d38b7da2850",
+                "sha256:644837f692e5f550741432dd3f223bbb9852018674981b1664e5dc339387588a",
+                "sha256:6bd0f6ad48ec2aa117d3d141940d484deccda84d4fcd884f5c3d93c23ecd8c79",
+                "sha256:8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1"
             ],
-            "index": "pypi",
-            "version": "==2.2.0"
+            "version": "==1.1.6"
         }
     },
     "develop": {}
