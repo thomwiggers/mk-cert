@@ -13,7 +13,7 @@ for (hash, size, type) in sphincs_variants:
     sphincs_id = f"SPHINCS_{hash}_{size.upper()}_{type.upper()}_ID"
     print(rf"""
 const {sphincs_id}: AlgorithmIdentifier = AlgorithmIdentifier {{
-    asn1_id_value: b"\x06\x0B\x2B\x06\x01\x04\x01\x82\x37\x59\x02\x{oid_bytes>>8:02X}\x{oid_bytes&0xFF:02X}"
+    asn1_id_value: b"\x06\x0B\x2A\x06\x01\x04\x01\x82\x37\x59\x02\x{oid_bytes>>8:02X}\x{oid_bytes&0xFF:02X}\x05\x00"
 }};
 
 /// SPHINCS signature

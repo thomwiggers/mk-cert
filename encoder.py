@@ -39,7 +39,7 @@ def private_key_der(algorithm, sk):
                   asn1.Numbers.ObjectIdentifier)
     encoder.write(None)
     encoder.leave()  # AlgorithmIdentifier
-    encoder.write(sk, asn1.Numbers.BitString)
+    encoder.write(sk, asn1.Numbers.OctetString)
     encoder.leave()
     return encoder.output()
 
@@ -127,7 +127,7 @@ def write_public_key(encoder, algorithm, pk):
     encoder.leave()
 
 
-def write_signature(encoder, algorithm, pk):
+def write_signature(encoder, algorithm, pk, signing_key):
     tbsencoder = asn1.Encoder()
     tbsencoder.start()
     write_tbs_certificate(tbsencoder, algorithm, pk)
@@ -136,7 +136,7 @@ def write_signature(encoder, algorithm, pk):
         f.write(tbscertificate_bytes)
 
     # Sign tbscertificate_bytes
-    run_cargo_example('signer', 'secretkey.bin',
+    run_cargo_example('signer', signing_key,
                       '../tbscertbytes.bin', '../tbs.sig')
 
     # Obtain signature
@@ -199,6 +199,13 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
 
     # Subject
     encoder.enter(asn1.Numbers.Sequence)  # Name
+    if is_ca:
+        encoder.enter(asn1.Numbers.Set)  # Set of attributes
+        encoder.enter(asn1.Numbers.Sequence)
+        encoder.write('2.5.4.3', asn1.Numbers.ObjectIdentifier)  # commonName
+        encoder.write('ThomCert', asn1.Numbers.PrintableString)
+        encoder.leave()  # commonName
+        encoder.leave()  # Set
     encoder.leave()  # empty Name: use subjectAltName (critical!)
 
     # SubjectPublicKeyInfo
@@ -213,18 +220,19 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
     # Extensions
     encoder.enter(3, cls=asn1.Classes.Context)  # [3]
     encoder.enter(asn1.Numbers.Sequence)  # Extensions
-    encoder.enter(asn1.Numbers.Sequence)  # Extension 1
-    encoder.write('2.5.29.17', asn1.Numbers.ObjectIdentifier)
-    encoder.write(True, asn1.Numbers.Boolean)  # Critical
     extvalue = asn1.Encoder()
-    extvalue.start()
-    extvalue.enter(asn1.Numbers.Sequence)  # Sequence of names
-    extvalue._emit_tag(0x02, asn1.Types.Primitive, asn1.Classes.Context)
-    extvalue._emit_length(len(b'localhost'))
-    extvalue._emit(b'localhost')
-    extvalue.leave()  # Sequence of names
-    encoder.write(extvalue.output(), asn1.Numbers.OctetString)
-    encoder.leave()  # Extension 1
+    if not is_ca:
+        encoder.enter(asn1.Numbers.Sequence)  # Extension 1
+        encoder.write('2.5.29.17', asn1.Numbers.ObjectIdentifier)
+        encoder.write(True, asn1.Numbers.Boolean)  # Critical
+        extvalue.start()
+        extvalue.enter(asn1.Numbers.Sequence)  # Sequence of names
+        extvalue._emit_tag(0x02, asn1.Types.Primitive, asn1.Classes.Context)
+        extvalue._emit_length(len(b'localhost'))
+        extvalue._emit(b'localhost')
+        extvalue.leave()  # Sequence of names
+        encoder.write(extvalue.output(), asn1.Numbers.OctetString)
+        encoder.leave()  # Extension 1
 
     # Extended Key Usage
     if not is_ca:
@@ -244,7 +252,7 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
     extvalue.start()
     extvalue.enter(asn1.Numbers.Sequence)  # Constraints
     extvalue.write(is_ca, asn1.Numbers.Boolean)  # cA = True
-    extvalue.write(10, asn1.Numbers.Integer)  # Max path length
+    extvalue.write(4, asn1.Numbers.Integer)  # Max path length
     extvalue.leave()  # Constraints
     encoder.write(extvalue.output(), asn1.Numbers.OctetString)
     encoder.leave()  # BasicConstraints
@@ -281,7 +289,7 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, ca=False):
     write_tbs_certificate(encoder, algorithm, pk, is_ca=ca)
     # Write signature algorithm
     write_signature_algorithm(encoder, algorithm)
-    write_signature(encoder, algorithm, pk)
+    write_signature(encoder, algorithm, pk, signing_key)
 
     encoder.leave()  # Leave Certificate SEQUENCE
 
@@ -292,13 +300,10 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, ca=False):
 
 if __name__ == "__main__":
     for algorithm in oids.keys():
+        if 'shake256128ssimple' not in algorithm:
+            continue
         print(f"Generating keys for {algorithm}")
         generate(algorithm, algorithm,
-                 f"{algorithm}-ca", f"{algorithm}-ca.key.bin", ca=True)
+                 f"{algorithm}-ca", f"../{algorithm}-ca.key.bin", ca=True)
         generate(algorithm, algorithm,
-                 f"{algorithm}", f"{algorithm}-ca.key.bin", ca=False)
-        with open(f"{algorithm}-chain.crt", 'wb') as f:
-            with open(f"{algorithm}.crt", 'rb') as cert:
-                f.write(cert.read())
-            with open(f"{algorithm}-ca.crt", 'rb') as cert:
-                f.write(cert.read())
+                 f"{algorithm}", f"../{algorithm}-ca.key.bin", ca=False)
