@@ -11,12 +11,15 @@ sphincs_variants = list(itertools.product(
             ['128s', '128f', '192s', '192f', '256s', '256f'],
             ['simple', 'robust']))
 
+signs = [f"sphincs{hash}{size}{type}"
+         for (hash, size, type)
+         in sphincs_variants]
+
+kems = ["kyber512", "kyber768", "kyber1024"]
+
 oids = {
     var: i
-    for (i, var) in enumerate(
-        f"sphincs{hash}{size}{type}"
-        for (hash, size, type)
-        in sphincs_variants)
+    for (i, var) in enumerate(itertools.chain(signs, kems))
 }
 
 
@@ -69,15 +72,8 @@ def der_to_pem(data, label=b'CERTIFICATE'):
     return buf.getvalue()
 
 
-def get_alg_kind(algorithm):
-    if 'sphincs' in algorithm:
-        return 'sign'
-    elif 'mqdss' in algorithm:
-        return 'sign'
-
-
-def set_up_algorithm(algorithm):
-    if get_alg_kind(algorithm) == 'kem':
+def set_up_algorithm(algorithm, type):
+    if 'type' == 'kem':
         set_up_kem_algorithm(algorithm)
     else:
         set_up_sign_algorithm(algorithm)
@@ -101,7 +97,25 @@ def run_cargo_example(example, *args):
         cwd='signutil')
 
 
-def get_keys():
+def get_keys(type):
+    if type == "kem":
+        return get_kem_keys()
+    elif type == "sign":
+        return get_sig_keys()
+
+
+def get_kem_keys():
+    subprocess.check_output(
+        ["cargo", "run"],
+        cwd='kemutil')
+    with open('kemutil/publickey.bin', 'rb') as f:
+        pk = f.read()
+    with open('kemutil/secretkey.bin', 'rb') as f:
+        sk = f.read()
+    return (pk, sk)
+
+
+def get_sig_keys():
     run_cargo_example('keygen')
     with open('signutil/publickey.bin', 'rb') as f:
         pk = f.read()
@@ -264,12 +278,13 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
     encoder.leave()  # Leave TBSCertificate SEQUENCE
 
 
-def generate(pk_algorithm, sig_algorithm, filename, signing_key, ca=False):
-    set_up_algorithm(pk_algorithm)
+def generate(pk_algorithm, sig_algorithm, filename,
+             signing_key, type='sign', ca=False):
+    set_up_algorithm(pk_algorithm, type)
 
-    (pk, sk) = get_keys()
+    (pk, sk) = get_keys(type)
     write_pem(f'{filename}.pub', b'PUBLIC KEY', public_key_der(algorithm, pk))
-    write_pem(f'{filename}.key', b'PRIVATE KEY', 
+    write_pem(f'{filename}.key', b'PRIVATE KEY',
               private_key_der(algorithm, sk))
     with open(f'{filename}.key.bin', 'wb') as f:
         f.write(sk)
@@ -299,11 +314,22 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, ca=False):
 
 
 if __name__ == "__main__":
-    for algorithm in oids.keys():
-        if 'shake256128ssimple' not in algorithm:
-            continue
+    for algorithm in signs:
+        break
         print(f"Generating keys for {algorithm}")
         generate(algorithm, algorithm,
-                 f"{algorithm}-ca", f"../{algorithm}-ca.key.bin", ca=True)
+                 f"{algorithm}-ca", f"../{algorithm}-ca.key.bin",
+                 type='sign', ca=True)
         generate(algorithm, algorithm,
-                 f"{algorithm}", f"../{algorithm}-ca.key.bin", ca=False)
+                 f"{algorithm}", f"../{algorithm}-ca.key.bin",
+                 type='sign', ca=False)
+
+    # KEM certs
+    sign_algorithm = "sphincsshake256128ssimple"
+    generate(sign_algorithm, sign_algorithm,
+             f"kem-ca", f"../kem-ca.key.bin",
+             type='sign', ca=True)
+    for algorithm in kems:
+        print(f"Generating KEM cert for {algorithm}")
+        generate(algorithm, sign_algorithm, f"{algorithm}",
+                 f"../kem-ca.key.bin", type="kem")

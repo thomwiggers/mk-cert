@@ -9,8 +9,8 @@ use kem::*;
 fn main() -> std::io::Result<()> {
     let (pk, sk) = keypair();
 
-    let mut pubkeyfile = File::create("kempublic.key")?;
-    let mut seckeyfile = File::create("kemsecret.key")?;
+    let mut pubkeyfile = File::create("publickey.bin")?;
+    let mut seckeyfile = File::create("secretkey.bin")?;
 
     pubkeyfile.write_all(pk.as_bytes())?;
     seckeyfile.write_all(sk.as_bytes())?;
