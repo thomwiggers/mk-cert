@@ -4,14 +4,13 @@ for (hash, size, type) in sphincs_variants:
     index = f"sphincs{hash}{size}{type}"
     oid_offset = oids[index]
     if hash == "shake256":
-        hash_id = "SHAKE_256"
+        hash = "SHAKE_256"
     elif hash == "sha256":
-        hash_id = "SHA_256"
+        hash = "SHA_256"
     else:
-        hash_id = hash.upper()
-    oid_bytes = 0xFE00 + oid_offset
-    sphincs_id = f"SPHINCS_{hash_id}_{size.upper()}_{type.upper()}"
-    print(f"    {sphincs_id},")
+        hash = hash.upper()
+    sphincs_id = f"SPHINCS_{hash}_{size.upper()}_{type.upper()}"
+    print(rf"   ({sphincs_id}, _) => SignatureScheme::{sphincs_id},")
 
 for alg in other_sig_algorithms:
-    print(f"    {alg},")
+    print(rf"   ({alg}, _) => SignatureScheme::{alg},")

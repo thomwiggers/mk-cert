@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 pqcrypto = { path = "../../rust/pqcrypto/pqcrypto" }
+csidh-rust = { path = "../../rust/csidh-rust/" }

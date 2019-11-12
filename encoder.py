@@ -10,16 +10,27 @@ sphincs_variants = list(itertools.product(
             ['sha256', 'shake256', 'haraka'],
             ['128s', '128f', '192s', '192f', '256s', '256f'],
             ['simple', 'robust']))
+other_sig_algorithms = [
+    "MQDSS_48",
+    "MQDSS_64",
+    "QTESLA_P_III",
+    "QTESLA_P_I",
+    "FALCON_512",
+    "FALCON_1024",
+]
 
 signs = [f"sphincs{hash}{size}{type}"
          for (hash, size, type)
-         in sphincs_variants]
+         in sphincs_variants] + other_sig_algorithms
 
-kems = ["kyber512", "kyber768", "kyber1024"]
+kems = ["csidh", "kyber512", "kyber768", "kyber1024"]
 
 oids = {
     var: i
-    for (i, var) in enumerate(itertools.chain(signs, kems))
+    for (i, var) in [
+        *enumerate(itertools.chain(signs)),
+        *[(i+100, var) for (i, var) in enumerate(kems)]
+    ]
 }
 
 
@@ -73,7 +84,7 @@ def der_to_pem(data, label=b'CERTIFICATE'):
 
 
 def set_up_algorithm(algorithm, type):
-    if 'type' == 'kem':
+    if type == 'kem':
         set_up_kem_algorithm(algorithm)
     else:
         set_up_sign_algorithm(algorithm)
@@ -86,12 +97,16 @@ def set_up_sign_algorithm(algorithm):
 
 
 def set_up_kem_algorithm(algorithm):
-    content = f"pub use pqcrypto::kem::{algorithm}::*;"
+    if algorithm == 'csidh':
+        content = f"pub use csidh_rust::*;"
+    else:
+        content = f"pub use pqcrypto::kem::{algorithm}::*;"
     with open('kemutil/src/kem.rs', 'w') as f:
         f.write(content)
 
 
-def run_cargo_example(example, *args):
+def run_signutil(example, *args):
+    print(f"Running 'cargo run --example {example} {' '.join(args)}'")
     subprocess.check_output(
         [*'cargo run --example'.split(), example, *args],
         cwd='signutil')
@@ -116,7 +131,7 @@ def get_kem_keys():
 
 
 def get_sig_keys():
-    run_cargo_example('keygen')
+    run_signutil('keygen')
     with open('signutil/publickey.bin', 'rb') as f:
         pk = f.read()
     with open('signutil/secretkey.bin', 'rb') as f:
@@ -141,17 +156,17 @@ def write_public_key(encoder, algorithm, pk):
     encoder.leave()
 
 
-def write_signature(encoder, algorithm, pk, signing_key):
+def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key):
     tbsencoder = asn1.Encoder()
     tbsencoder.start()
-    write_tbs_certificate(tbsencoder, algorithm, pk)
+    write_tbs_certificate(tbsencoder, algorithm, sign_algorithm, pk)
     tbscertificate_bytes = tbsencoder.output()
     with open('tbscertbytes.bin', 'wb') as f:
         f.write(tbscertificate_bytes)
 
     # Sign tbscertificate_bytes
-    run_cargo_example('signer', signing_key,
-                      '../tbscertbytes.bin', '../tbs.sig')
+    run_signutil('signer', signing_key,
+                 '../tbscertbytes.bin', '../tbs.sig')
 
     # Obtain signature
     with open('tbs.sig', 'rb') as f:
@@ -170,7 +185,7 @@ def write_signature_algorithm(encoder, algorithm):
     encoder.leave()  # Leave AlgorithmIdentifier
 
 
-def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
+def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False):
     #  TBSCertificate  ::=  SEQUENCE  {
     #      version         [0]  EXPLICIT Version DEFAULT v1,
     #      serialNumber         CertificateSerialNumber,
@@ -192,7 +207,7 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
     encoder.leave()  # [0]
     encoder.write(1)  # serialnumber
 
-    write_signature_algorithm(encoder, algorithm)
+    write_signature_algorithm(encoder, sign_algorithm)
 
     # ISSUER
     encoder.enter(asn1.Numbers.Sequence)  # Name
@@ -226,6 +241,7 @@ def write_tbs_certificate(encoder, algorithm, pk, is_ca=False):
     #    SubjectPublicKeyInfo  ::=  SEQUENCE  {
     #      algorithm            AlgorithmIdentifier,
     #      subjectPublicKey     BIT STRING  }
+    print(f"Written {len(pk)} bytes of pk")
     write_public_key(encoder, algorithm, pk)
 
     # issuerUniqueId
@@ -286,8 +302,10 @@ def generate(pk_algorithm, sig_algorithm, filename,
     write_pem(f'{filename}.pub', b'PUBLIC KEY', public_key_der(algorithm, pk))
     write_pem(f'{filename}.key', b'PRIVATE KEY',
               private_key_der(algorithm, sk))
-    with open(f'{filename}.key.bin', 'wb') as f:
-        f.write(sk)
+    with open(f'{filename}.pub.bin', 'wb') as publickeyfile:
+        publickeyfile.write(pk)
+    with open(f'{filename}.key.bin', 'wb') as secretkeyfile:
+        secretkeyfile.write(sk)
 
     set_up_sign_algorithm(sig_algorithm)
 
@@ -301,21 +319,22 @@ def generate(pk_algorithm, sig_algorithm, filename,
     #       signatureValue       BIT STRING  }
 
     encoder.enter(asn1.Numbers.Sequence)  # Certificate
-    write_tbs_certificate(encoder, algorithm, pk, is_ca=ca)
+    write_tbs_certificate(encoder, pk_algorithm, sig_algorithm, pk, is_ca=ca)
     # Write signature algorithm
-    write_signature_algorithm(encoder, algorithm)
-    write_signature(encoder, algorithm, pk, signing_key)
+    write_signature_algorithm(encoder, sig_algorithm)
+    write_signature(encoder, pk_algorithm, sig_algorithm, pk, signing_key)
 
     encoder.leave()  # Leave Certificate SEQUENCE
 
-    with open(f'{filename}.crt.bin', 'wb') as f:
-        f.write(encoder.output())
+    with open(f'{filename}.crt.bin', 'wb') as file_:
+        file_.write(encoder.output())
     write_pem(f'{filename}.crt', b'CERTIFICATE', encoder.output())
 
 
 if __name__ == "__main__":
     for algorithm in signs:
-        break
+        if algorithm != 'sphincsshake256128ssimple':
+            continue
         print(f"Generating keys for {algorithm}")
         generate(algorithm, algorithm,
                  f"{algorithm}-ca", f"../{algorithm}-ca.key.bin",
@@ -329,7 +348,7 @@ if __name__ == "__main__":
     generate(sign_algorithm, sign_algorithm,
              f"kem-ca", f"../kem-ca.key.bin",
              type='sign', ca=True)
-    for algorithm in kems:
-        print(f"Generating KEM cert for {algorithm}")
-        generate(algorithm, sign_algorithm, f"{algorithm}",
+    for kem_algorithm in kems:
+        print(f"Generating KEM cert for {kem_algorithm}")
+        generate(kem_algorithm, sign_algorithm, f"{kem_algorithm}",
                  f"../kem-ca.key.bin", type="kem")

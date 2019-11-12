@@ -1,1 +1,1 @@
-pub use pqcrypto::kem::kyber512::*;
+pub use pqcrypto::kem::kyber1024::*;

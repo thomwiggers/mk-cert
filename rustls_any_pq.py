@@ -1,6 +1,5 @@
 from encoder import oids, sphincs_variants, other_sig_algorithms
 
-print("pub enum AlgorithmID {")
 for (hash, size, type) in sphincs_variants:
     index = f"sphincs{hash}{size}{type}"
     oid_offset = oids[index]
@@ -10,13 +9,8 @@ for (hash, size, type) in sphincs_variants:
         hash = "SHA_256"
     else:
         hash = hash.upper()
-    oid_bytes = 0xFE00 + oid_offset
     sphincs_id = f"SPHINCS_{hash}_{size.upper()}_{type.upper()}"
-    print(f"    {sphincs_id} = 0x{oid_bytes:X},")
+    print(rf"(SignatureScheme::{sphincs_id}, &signature::{sphincs_id}),")
 
 for alg in other_sig_algorithms:
-    oid_offset = oids[alg]
-    oid_bytes = 0xFE00 + oid_offset
-    print(f"    {alg} = 0x{oid_bytes:X},")
-
-print("}")
+    print(rf"(SignatureScheme::{alg}, &signature::{alg}),")

@@ -7,7 +7,7 @@ use kem::*;
 
 
 fn main() -> std::io::Result<()> {
-    let (pk, sk) = keypair();
+    let (pk, sk): (kem::PublicKey, kem::SecretKey) = keypair();
 
     let mut pubkeyfile = File::create("publickey.bin")?;
     let mut seckeyfile = File::create("secretkey.bin")?;
