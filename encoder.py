@@ -23,7 +23,27 @@ signs = [f"sphincs{hash}{size}{type}"
          for (hash, size, type)
          in sphincs_variants] + other_sig_algorithms
 
-kems = ["csidh", "kyber512", "kyber768", "kyber1024"]
+kems = [
+    # CSIDH
+    "csidh",
+    # kyber
+    "kyber512", "kyber768", "kyber1024",
+    # kyber90s
+    "kyber51290s", "kyber76890s", "kyber102490s",
+    # threebears
+    "babybear", "mamabear", "papabear",
+    # SABER
+    "lightsaber", "saber", "firesaber",
+    # leda
+    "ledakemlt12", "ledakemlt32", "ledakemlt52",
+    # newhope
+    "newhope512cpa", "newhope512cca", "newhope1024cpa", "newhope1024cca",
+    # NTRU
+    "ntruhps2048509", "ntruhps2048677", "ntruhps4096821", "ntruhrss701",
+    # Frodo
+    "frodokem640aes", "frodokem640shake", "frodokem976aes", "frodokem976shake",
+    "frodokem1344aes", "frodokem1344shake",
+]
 
 oids = {
     var: i
