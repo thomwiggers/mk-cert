@@ -9,4 +9,4 @@ verify_ssl = true
 asn1 = {editable = true,path = "./../python-asn1"}
 
 [requires]
-python_version = "3.7"
+python_version = "3"
