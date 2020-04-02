@@ -45,6 +45,28 @@ kems = [
     "frodokem1344aes", "frodokem1344shake",
 ]
 
+OQS_KEMS = [
+    ('sikep434compresed', 'SikeP434Compressed'),
+    ('sikep434compresed', 'SikeP434Compressed'),
+]
+
+kems.extend((kem for (kem, _) in OQS_KEMS))
+
+
+def is_oqs_algorithm(algorithm):
+    for (kem, _) in OQS_KEMS:
+        if kem == algorithm:
+            return True
+    return False
+
+
+def get_oqs_algorithm(algorithm):
+    for (kem, alg) in OQS_KEMS:
+        if kem == algorithm:
+            return alg
+    return False
+
+
 oids = {
     var: i
     for (i, var) in [
@@ -116,9 +138,12 @@ def set_up_sign_algorithm(algorithm):
         f.write(content)
 
 
+
 def set_up_kem_algorithm(algorithm):
     if algorithm == 'csidh':
         content = f"pub use csidh_rust::*;"
+    elif is_oqs_algorithm(algorithm):
+        content = f"pub use oqs::kem::Algorithm::{get_oqs_algorithm(algorithm)} as thealgorithm;"
     else:
         content = f"pub use pqcrypto::kem::{algorithm}::*;"
     with open('kemutil/src/kem.rs', 'w') as f:
@@ -132,16 +157,20 @@ def run_signutil(example, *args):
         cwd='signutil')
 
 
-def get_keys(type):
+def get_keys(type, algorithm):
     if type == "kem":
-        return get_kem_keys()
+        return get_kem_keys(algorithm)
     elif type == "sign":
         return get_sig_keys()
 
 
-def get_kem_keys():
+def get_kem_keys(algorithm):
+    if is_oqs_algorithm(algorithm):
+        variant = "liboqs"
+    else:
+        variant = "pqclean"
     subprocess.check_output(
-        ["cargo", "run"],
+        ["cargo", "run", "--features", variant],
         cwd='kemutil')
     with open('kemutil/publickey.bin', 'rb') as f:
         pk = f.read()
@@ -318,7 +347,7 @@ def generate(pk_algorithm, sig_algorithm, filename,
              signing_key, type='sign', ca=False):
     set_up_algorithm(pk_algorithm, type)
 
-    (pk, sk) = get_keys(type)
+    (pk, sk) = get_keys(type, pk_algorithm)
     write_pem(f'{filename}.pub', b'PUBLIC KEY', public_key_der(algorithm, pk))
     write_pem(f'{filename}.key', b'PRIVATE KEY',
               private_key_der(algorithm, sk))
