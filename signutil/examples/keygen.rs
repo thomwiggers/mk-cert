@@ -1,15 +1,16 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-use pqcrypto::prelude::*;
+use oqs::sig::*;
 
-use signutil::*;
+use signutil::alg;
 
 fn main() -> std::io::Result<()> {
+    let sigalg = Sig::new(alg).unwrap();
+    let (pk, sk) = sigalg.keypair().unwrap();
     let mut pubfile = File::create("publickey.bin")?;
     let mut secfile = File::create("secretkey.bin")?;
-    let (pk, sk) = keypair();
-    pubfile.write_all(pk.as_bytes())?;
-    secfile.write_all(sk.as_bytes())?;
+    pubfile.write_all(pk.as_ref())?;
+    secfile.write_all(sk.as_ref())?;
     Ok(())
 }

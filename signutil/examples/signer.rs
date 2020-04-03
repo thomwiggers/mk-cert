@@ -1,9 +1,9 @@
 use std::fs::{self, File};
 use std::io::prelude::*;
 
-use pqcrypto::prelude::*;
+use oqs::sig::*;
 
-use signutil::*;
+use signutil::alg;
 
 fn parseargs() -> (String, String, String) {
     let args: Vec<String> = std::env::args().collect();
@@ -17,10 +17,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (sk_filename, in_filename, sig_filename) = parseargs();
     let mut sigfile = File::create(sig_filename)?;
 
-    let sk = SecretKey::from_bytes(&fs::read(sk_filename)?)?;
-    let signature = detached_sign(&fs::read(in_filename)?, &sk);
+    let sigalg = Sig::new(alg).unwrap();
+    let sk_content = &fs::read(sk_filename)?;
+    let sk = sigalg.secret_key_from_bytes(&sk_content);
+    let signature = sigalg.sign(&fs::read(in_filename)?, &sk).unwrap();
 
-    sigfile.write_all(signature.as_bytes())?;
+    sigfile.write_all(signature.as_ref())?;
 
     Ok(())
 }

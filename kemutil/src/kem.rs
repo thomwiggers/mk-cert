@@ -1,1 +1,1 @@
-pub use oqs::kem::Algorithm::SikeP434Compressed as thealgorithm;
+pub use pqcrypto::kem::newhope512cpa::*;

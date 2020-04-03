@@ -1,8 +1,9 @@
 use std::fs;
 
-use pqcrypto::prelude::*;
+use oqs::sig::*;
 
-use signutil::*;
+use signutil::alg;
+
 fn parseargs() -> (String, String, String) {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 4 {
@@ -13,11 +14,14 @@ fn parseargs() -> (String, String, String) {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (pk_filename, in_filename, sig_filename) = parseargs();
-    let pk = PublicKey::from_bytes(&fs::read(pk_filename)?)?;
+    let sigalg = Sig::new(alg).unwrap();
+    let pk = &fs::read(pk_filename)?;
+    let pk = sigalg.public_key_from_bytes(pk);
     let msg = &fs::read(in_filename)?;
-    let sig = DetachedSignature::from_bytes(&fs::read(sig_filename)?)?;
+    let sig = &fs::read(sig_filename)?;
+    let sig = sigalg.signature_from_bytes(sig);
 
-    if let Ok(()) = verify_detached_signature(&sig, msg, &pk) {
+    if let Ok(()) = sigalg.verify(msg, &sig, &pk) {
         println!("Verification success!");
     } else {
         println!("Verification failed!");

@@ -20,7 +20,7 @@ mod doingit {
     pub fn do_keypair() -> (Vec<u8>, Vec<u8>) {
         let alg = Kem::new(thealgorithm).unwrap();
         let (pk, sk) = alg.keypair().unwrap();
-        (pk.to_vec(), sk.to_vec())
+        (pk.into_vec(), sk.into_vec())
     }
 }
 #[cfg(not(any(feature = "oqs", feature="pqcrypto")))]

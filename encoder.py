@@ -6,22 +6,71 @@ from io import BytesIO
 
 import itertools
 
-sphincs_variants = list(itertools.product(
-            ['sha256', 'shake256', 'haraka'],
-            ['128s', '128f', '192s', '192f', '256s', '256f'],
-            ['simple', 'robust']))
-other_sig_algorithms = [
-    "MQDSS_48",
-    "MQDSS_64",
-    "QTESLA_P_III",
-    "QTESLA_P_I",
-    "FALCON_512",
-    "FALCON_1024",
+signs = [
+    "Dilithium2",
+    "Dilithium3",
+    "Dilithium4",
+    "Falcon512",
+    "Falcon1024",
+    "MQDSS3148",
+    "MQDSS3164",
+    "RainbowIaClassic",
+    "RainbowIaCyclic",
+    "RainbowIaCyclicCompressed",
+    "RainbowIIIcclassic",
+    "RainbowIIIcCyclic",
+    "RainbowIIIcCyclicCompressed",
+    "RainbowVcClassic",
+    "RainbowVcCyclic",
+    "RainbowVcCyclicCompressed",
+    "SphincsHaraka128fRobust",
+    "SphincsHaraka128fSimple",
+    "SphincsHaraka128sRobust",
+    "SphincsHaraka128sSimple",
+    "SphincsHaraka192fRobust",
+    "SphincsHaraka192fSimple",
+    "SphincsHaraka192sRobust",
+    "SphincsHaraka192sSimple",
+    "SphincsHaraka256fRobust",
+    "SphincsHaraka256fSimple",
+    "SphincsHaraka256sRobust",
+    "SphincsHaraka256sSimple",
+    "SphincsSha256128fRobust",
+    "SphincsSha256128fSimple",
+    "SphincsSha256128sRobust",
+    "SphincsSha256128sSimple",
+    "SphincsSha256192fRobust",
+    "SphincsSha256192fSimple",
+    "SphincsSha256192sRobust",
+    "SphincsSha256192sSimple",
+    "SphincsSha256256fRobust",
+    "SphincsSha256256fSimple",
+    "SphincsSha256256sRobust",
+    "SphincsSha256256sSimple",
+    "SphincsShake256128fRobust",
+    "SphincsShake256128fSimple",
+    "SphincsShake256128sRobust",
+    "SphincsShake256128sSimple",
+    "SphincsShake256192fRobust",
+    "SphincsShake256192fSimple",
+    "SphincsShake256192sRobust",
+    "SphincsShake256192sSimple",
+    "SphincsShake256256fRobust",
+    "SphincsShake256256fSimple",
+    "SphincsShake256256sRobust",
+    "SphincsShake256256sSimple",
+    "PicnicL1Fs",
+    "PicnicL1Ur",
+    "PicnicL3Fs",
+    "PicnicL3Ur",
+    "PicnicL5Fs",
+    "PicnicL5Ur",
+    "Picnic2L1Fs",
+    "Picnic2L3Fs",
+    "Picnic2L5Fs",
+    "QTeslaPI",
+    "QTeslaPIII",
 ]
-
-signs = [f"sphincs{hash}{size}{type}"
-         for (hash, size, type)
-         in sphincs_variants] + other_sig_algorithms
 
 kems = [
     # CSIDH
@@ -133,7 +182,7 @@ def set_up_algorithm(algorithm, type):
 
 
 def set_up_sign_algorithm(algorithm):
-    content = f"pub use pqcrypto::sign::{algorithm}::*;"
+    content = f"pub use oqs::sig::Algorithm::{algorithm} as alg;"
     with open('signutil/src/lib.rs', 'w') as f:
         f.write(content)
 
@@ -152,9 +201,11 @@ def set_up_kem_algorithm(algorithm):
 
 def run_signutil(example, *args):
     print(f"Running 'cargo run --example {example} {' '.join(args)}'")
-    subprocess.check_output(
+    subprocess.run(
         [*'cargo run --example'.split(), example, *args],
-        cwd='signutil')
+        cwd='signutil',
+        check=True,
+        capture_output=True)
 
 
 def get_keys(type, algorithm):
@@ -169,9 +220,10 @@ def get_kem_keys(algorithm):
         variant = "liboqs"
     else:
         variant = "pqclean"
-    subprocess.check_output(
+    subprocess.run(
         ["cargo", "run", "--features", variant],
-        cwd='kemutil')
+        cwd='kemutil',
+        check=True, capture_output=True)
     with open('kemutil/publickey.bin', 'rb') as f:
         pk = f.read()
     with open('kemutil/secretkey.bin', 'rb') as f:
@@ -214,7 +266,7 @@ def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key):
         f.write(tbscertificate_bytes)
 
     # Sign tbscertificate_bytes
-    run_signutil('signer', signing_key,
+    run_signutil('signer', signing_key.lower(),
                  '../tbscertbytes.bin', '../tbs.sig')
 
     # Obtain signature
@@ -290,7 +342,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False):
     #    SubjectPublicKeyInfo  ::=  SEQUENCE  {
     #      algorithm            AlgorithmIdentifier,
     #      subjectPublicKey     BIT STRING  }
-    print(f"Written {len(pk)} bytes of pk")
+    #print(f"Written {len(pk)} bytes of pk")
     write_public_key(encoder, algorithm, pk)
 
     # issuerUniqueId
@@ -345,6 +397,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False):
 
 def generate(pk_algorithm, sig_algorithm, filename,
              signing_key, type='sign', ca=False):
+    filename = filename.lower()
     set_up_algorithm(pk_algorithm, type)
 
     (pk, sk) = get_keys(type, pk_algorithm)
@@ -381,8 +434,10 @@ def generate(pk_algorithm, sig_algorithm, filename,
 
 
 if __name__ == "__main__":
+    root_sign_algorithm = "RainbowIaCyclicCompressed"
+    intermediate_sign_algorithm = "Falcon1024"
     for algorithm in signs:
-        if algorithm != 'sphincsshake256128ssimple':
+        if algorithm not in (root_sign_algorithm, intermediate_sign_algorithm,):
             continue
         print(f"Generating keys for {algorithm}")
         generate(algorithm, algorithm,
@@ -393,11 +448,20 @@ if __name__ == "__main__":
                  type='sign', ca=False)
 
     # KEM certs
-    sign_algorithm = "sphincsshake256128ssimple"
-    generate(sign_algorithm, sign_algorithm,
+    generate(root_sign_algorithm, root_sign_algorithm,
              f"kem-ca", f"../kem-ca.key.bin",
              type='sign', ca=True)
+    generate(intermediate_sign_algorithm, root_sign_algorithm,
+             "kem-int", f"../kem-ca.key.bin",
+             type="sign", ca=True)
     for kem_algorithm in kems:
         print(f"Generating KEM cert for {kem_algorithm}")
-        generate(kem_algorithm, sign_algorithm, f"{kem_algorithm}",
-                 f"../kem-ca.key.bin", type="kem")
+        generate(kem_algorithm, intermediate_sign_algorithm,
+                 f"{kem_algorithm}",
+                 f"../kem-int.key.bin", type="kem")
+
+        with open(f"{kem_algorithm}.chain.crt", 'wb') as file_:
+            with open(f"kem-int.crt", 'rb') as r:
+                file_.write(r.read())
+            with open(f"{kem_algorithm}.crt", 'rb') as r:
+                file_.write(r.read())
