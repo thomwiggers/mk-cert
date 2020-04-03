@@ -17,5 +17,5 @@ for (hash, size, type) in sphincs_variants:
 for alg in other_sig_algorithms:
     oid_offset = oids[alg]
     oid_bytes = 0xFE00 + oid_offset
-    ns = alg.lower().replace('_', '')
+    ns = alg.lower().replace("_", "")
     print(f"pqsig_scheme!({alg}, {ns});")
