@@ -85,8 +85,11 @@ kems = [
     "kyber102490s",
     # threebears
     "babybear",
+    "babybear-ephem",
     "mamabear",
+    "mamabear-ephem",
     "papabear",
+    "papabear-ephem",
     # SABER
     "lightsaber",
     "saber",
@@ -112,11 +115,29 @@ kems = [
     "frodokem976shake",
     "frodokem1344aes",
     "frodokem1344shake",
+    # McEliece
+    "mceliece348864",
+    "mceliece348864f",
+    "mceliece460896",
+    "mceliece460896f",
+    "mceliece6688128",
+    "mceliece6688128f",
+    "mceliece6960119",
+    "mceliece6960119f",
+    "mceliece8192128",
+    "mceliece8192128f",
+    # hqc
+    "hqc-128-1-cca2"
+    "hqc-192-1-cca2"
+    "hqc-192-2-cca2"
+    "hqc-256-1-cca2"
+    "hqc-256-2-cca2"
+    "hqc-256-3-cca2"
 ]
 
 OQS_KEMS = [
-    ("sikep434compresed", "SikeP434Compressed"),
-    ("sikep434compresed", "SikeP434Compressed"),
+    ("bikel1fo", "BikeL1Fo"),
+    ("sikep434compressed", "SikeP434Compressed"),
 ]
 
 kems.extend((kem for (kem, _) in OQS_KEMS))
@@ -450,8 +471,8 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
 
 
 if __name__ == "__main__":
-    root_sign_algorithm = "RainbowIaCyclicCompressed"
-    intermediate_sign_algorithm = "Falcon1024"
+    root_sign_algorithm = "RainbowIaCyclic"
+    intermediate_sign_algorithm = "Falcon512"
     for algorithm in signs:
         if algorithm not in (root_sign_algorithm, intermediate_sign_algorithm,):
             continue
