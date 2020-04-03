@@ -170,7 +170,7 @@ version = "0.1.0"
 dependencies = [
  "csidh-rust 0.1.0",
  "oqs 0.1.0",
- "pqcrypto 0.9.1",
+ "pqcrypto 0.10.0",
 ]
 
 [[package]]
@@ -242,12 +242,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "pqcrypto"
-version = "0.9.1"
+version = "0.10.0"
 dependencies = [
  "pqcrypto-classicmceliece 0.1.0",
  "pqcrypto-dilithium 0.3.1",
  "pqcrypto-falcon 0.2.2",
  "pqcrypto-frodo 0.4.2",
+ "pqcrypto-hqc 0.0.1",
  "pqcrypto-kyber 0.6.5",
  "pqcrypto-ledacryptkem 0.0.3",
  "pqcrypto-mqdss 0.2.3",
@@ -294,6 +295,16 @@ dependencies = [
 [[package]]
 name = "pqcrypto-frodo"
 version = "0.4.2"
+dependencies = [
+ "cc 1.0.50 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.68 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pqcrypto-traits 0.3.3",
+]
+
+[[package]]
+name = "pqcrypto-hqc"
+version = "0.0.1"
 dependencies = [
  "cc 1.0.50 (registry+https://github.com/rust-lang/crates.io-index)",
  "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -6,10 +6,9 @@ mod kem;
 #[cfg(feature = "pqclean")]
 mod doingit{
     use crate::kem::keypair;
-    use pqcrypto::prelude::*;
     pub fn do_keypair() -> (Vec<u8>, Vec<u8>) {
         let (pk, sk)= keypair();
-        ((&pk).as_ref().to_vec(), (&sk).as_ref().to_vec())
+        (pk.as_ref().to_vec(), sk.as_ref().to_vec())
     }
 }
 
