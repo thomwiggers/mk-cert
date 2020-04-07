@@ -3,8 +3,17 @@ from datetime import datetime, timedelta
 import subprocess
 import base64
 from io import BytesIO
+import os
+import resource
 
 import itertools
+
+subenv = os.environ.copy()
+subenv["RUSTFLAGS"] = "-C target-cpu=native"
+subenv["RUST_MIN_STACK"] = str(20*1024*1024)
+
+
+resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
 signs = [
     "Dilithium2",
@@ -85,11 +94,11 @@ kems = [
     "kyber102490s",
     # threebears
     "babybear",
-    "babybear-ephem",
+    "babybearephem",
     "mamabear",
-    "mamabear-ephem",
+    "mamabearephem",
     "papabear",
-    "papabear-ephem",
+    "papabearephem",
     # SABER
     "lightsaber",
     "saber",
@@ -127,12 +136,12 @@ kems = [
     "mceliece8192128",
     "mceliece8192128f",
     # hqc
-    "hqc-128-1-cca2"
-    "hqc-192-1-cca2"
-    "hqc-192-2-cca2"
-    "hqc-256-1-cca2"
-    "hqc-256-2-cca2"
-    "hqc-256-3-cca2"
+    "hqc1281cca2",
+    "hqc1921cca2",
+    "hqc1922cca2",
+    "hqc2561cca2",
+    "hqc2562cca2",
+    "hqc2563cca2",
 ]
 
 OQS_KEMS = [
@@ -241,10 +250,11 @@ def set_up_kem_algorithm(algorithm):
 def run_signutil(example, *args):
     print(f"Running 'cargo run --example {example} {' '.join(args)}'")
     subprocess.run(
-        [*"cargo run --example".split(), example, *args],
+        [*"cargo run --release --example".split(), example, *args],
         cwd="signutil",
         check=True,
         capture_output=True,
+        env=subenv,
     )
 
 
@@ -261,9 +271,10 @@ def get_kem_keys(algorithm):
     else:
         variant = "pqclean"
     subprocess.run(
-        ["cargo", "run", "--features", variant],
+        ["cargo", "run", "--release", "--features", variant],
         cwd="kemutil",
         check=True,
+        env=subenv,
         capture_output=True,
     )
     with open("kemutil/publickey.bin", "rb") as f:

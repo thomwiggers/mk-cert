@@ -1,9 +1,12 @@
-from encoder import kems
+from encoder import *
 
 kems = kems[1:]
 
 for kem in kems:
-    print(f"kem_implementation!({kem}, {kem.title()}, {kem.upper()});")
+    if is_oqs_algorithm(kem):
+        print(f"oqs_kem_implementation!({kem}, {kem.title()}, {kem.upper()});")
+    else:
+        print(f"pqclean_kem_implementation!({kem}, {kem.title()}, {kem.upper()});")
 
 
 print("// algorithm_to_id")
