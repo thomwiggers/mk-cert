@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import subprocess
 import base64
 from io import BytesIO
+import re
 import os
 import resource
 
@@ -14,6 +15,10 @@ subenv["RUST_MIN_STACK"] = str(20*1024*1024)
 
 
 resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+
+def camel_to_snake(name):
+  name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+  return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 signs = [
     "Dilithium2",
@@ -533,7 +538,7 @@ if __name__ == "__main__":
         )
 
         with open(f"{kem_algorithm}.chain.crt", "wb") as file_:
-            with open(f"kem-int.crt", "rb") as r:
-                file_.write(r.read())
             with open(f"{kem_algorithm}.crt", "rb") as r:
+                file_.write(r.read())
+            with open(f"kem-int.crt", "rb") as r:
                 file_.write(r.read())

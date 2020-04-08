@@ -4,7 +4,8 @@ kems = kems[1:]
 
 for kem in kems:
     if is_oqs_algorithm(kem):
-        print(f"oqs_kem_implementation!({kem}, {kem.title()}, {kem.upper()});")
+        oqs_alg = get_oqs_algorithm(kem)
+        print(f"oqs_kem_implementation!({kem}, {oqs_alg}, {kem.upper()});")
     else:
         print(f"pqclean_kem_implementation!({kem}, {kem.title()}, {kem.upper()});")
 

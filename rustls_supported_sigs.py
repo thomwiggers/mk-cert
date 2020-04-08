@@ -2,4 +2,4 @@ from encoder import *
 
 for alg in signs:
     alg = camel_to_snake(alg).upper()
-    print(rf"""&webpki::{alg},""")
+    print(rf"""SignatureScheme::{alg},""")

@@ -1,34 +1,9 @@
-from encoder import oids, sphincs_variants, kems, other_sig_algorithms
+from encoder import oids, signs, camel_to_snake
 
-for (hash, size, type) in sphincs_variants:
-    index = f"sphincs{hash}{size}{type}"
-    oid_offset = oids[index]
-    if hash == "shake256":
-        hash = "SHAKE_256"
-    elif hash == "sha256":
-        hash = "SHA_256"
-    else:
-        hash = hash.upper()
+for alg in signs:
+    oid_offset = oids[alg]
+    alg = camel_to_snake(alg).upper()
     oid_bytes = 0xFE00 + oid_offset
-    sphincs_id = f"SPHINCS_{hash}_{size.upper()}_{type.upper()}_ID"
-    print(
-        rf"""
-const {sphincs_id}: AlgorithmIdentifier = AlgorithmIdentifier {{
-    asn1_id_value: b"\x06\x0B\x2A\x06\x01\x04\x01\x82\x37\x59\x02\x{oid_bytes>>8:02X}\x{oid_bytes&0xFF:02X}\x05\x00"
-}};
-
-/// SPHINCS signature
-pub static {sphincs_id[:-3]}: SignatureAlgorithm = SignatureAlgorithm {{
-    public_key_alg_id: {sphincs_id},
-    signature_alg_id: {sphincs_id},
-    verification_alg: &signature::{sphincs_id[:-3]},
-}};
-
-"""
-    )
-
-for alg in other_sig_algorithms:
-    oid_bytes = 0xFE00 + oids[alg]
     print(
         rf"""
 const {alg}_ID: AlgorithmIdentifier = AlgorithmIdentifier {{

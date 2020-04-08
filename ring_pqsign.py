@@ -1,22 +1,11 @@
-from encoder import oids, sphincs_variants, other_sig_algorithms
+from encoder import *
+
 
 print("pub enum AlgorithmID {")
-for (hash, size, type) in sphincs_variants:
-    index = f"sphincs{hash}{size}{type}"
+for alg in signs:
+    snakename = camel_to_snake(alg).upper()
+    index = alg
     oid_offset = oids[index]
-    if hash == "shake256":
-        hash = "SHAKE_256"
-    elif hash == "sha256":
-        hash = "SHA_256"
-    else:
-        hash = hash.upper()
     oid_bytes = 0xFE00 + oid_offset
-    sphincs_id = f"SPHINCS_{hash}_{size.upper()}_{type.upper()}"
-    print(f"    {sphincs_id} = 0x{oid_bytes:X},")
-
-for alg in other_sig_algorithms:
-    oid_offset = oids[alg]
-    oid_bytes = 0xFE00 + oid_offset
-    print(f"    {alg} = 0x{oid_bytes:X},")
-
+    print(f"    {snakename} = 0x{oid_bytes:X},")
 print("}")

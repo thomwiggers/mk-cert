@@ -1,1 +1,1 @@
-pub use pqcrypto::kem::mceliece6688128::*;
+pub use oqs::kem::Algorithm::SikeP434Compressed as thealgorithm;
