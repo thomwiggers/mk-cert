@@ -6,8 +6,11 @@ from io import BytesIO
 import re
 import os
 import resource
+import time
 
 import itertools
+
+DEBUG = False
 
 subenv = os.environ.copy()
 subenv["RUSTFLAGS"] = "-C target-cpu=native"
@@ -171,13 +174,7 @@ def get_oqs_algorithm(algorithm):
     return False
 
 
-oids = {
-    var: i
-    for (i, var) in [
-        *enumerate(itertools.chain(signs)),
-        *[(i + 100, var) for (i, var) in enumerate(kems)],
-    ]
-}
+oids = {var: i for (i, var) in enumerate(itertools.chain(signs, kems))}
 
 
 def public_key_der(algorithm, pk):
@@ -193,7 +190,6 @@ def private_key_der(algorithm, sk):
     encoder.enter(asn1.Numbers.Sequence)
     encoder.write(0, asn1.Numbers.Integer)
     encoder.enter(asn1.Numbers.Sequence)  # AlgorithmIdentifier
-    # FIXME: This should be parameterized
     oid = oids[algorithm]
     encoder.write(f"1.2.6.1.4.1.311.89.2.{16128 + oid}", asn1.Numbers.ObjectIdentifier)
     encoder.write(None)
@@ -314,20 +310,25 @@ def write_public_key(encoder, algorithm, pk):
     encoder.leave()
 
 
-def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key):
+def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, pathlen):
     tbsencoder = asn1.Encoder()
     tbsencoder.start()
-    write_tbs_certificate(tbsencoder, algorithm, sign_algorithm, pk)
+    write_tbs_certificate(tbsencoder, algorithm, sign_algorithm, pk, is_ca=is_ca, pathlen=pathlen)
     tbscertificate_bytes = tbsencoder.output()
-    with open("tbscertbytes.bin", "wb") as f:
+    tbscertbytes_file = f"tbscertbytes_for{algorithm}_by_{signing_key[3:].lower()}.bin"
+    tbssig_file = f"tbs_sig_for-{algorithm}-by-{signing_key[3:].lower()}.bin"
+    with open(tbscertbytes_file, "wb") as f:
         f.write(tbscertificate_bytes)
 
     # Sign tbscertificate_bytes
-    run_signutil("signer", signing_key.lower(), "../tbscertbytes.bin", "../tbs.sig")
+    if DEBUG:
+        time.sleep(2)
+    run_signutil("signer", signing_key.lower(), f"../{tbscertbytes_file}", f"../{tbssig_file}")
 
     # Obtain signature
-    with open("tbs.sig", "rb") as f:
+    with open(tbssig_file, "rb") as f:
         sig = f.read()
+
     # Write bytes as bitstring
     encoder.write(sig, asn1.Numbers.BitString)
 
@@ -341,7 +342,7 @@ def write_signature_algorithm(encoder, algorithm):
     encoder.leave()  # Leave AlgorithmIdentifier
 
 
-def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False):
+def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, pathlen=4):
     #  TBSCertificate  ::=  SEQUENCE  {
     #      version         [0]  EXPLICIT Version DEFAULT v1,
     #      serialNumber         CertificateSerialNumber,
@@ -438,7 +439,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False):
     extvalue.start()
     extvalue.enter(asn1.Numbers.Sequence)  # Constraints
     extvalue.write(is_ca, asn1.Numbers.Boolean)  # cA = True
-    extvalue.write(4, asn1.Numbers.Integer)  # Max path length
+    extvalue.write(pathlen, asn1.Numbers.Integer)  # Max path length
     extvalue.leave()  # Constraints
     encoder.write(extvalue.output(), asn1.Numbers.OctetString)
     encoder.leave()  # BasicConstraints
@@ -450,13 +451,13 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False):
     encoder.leave()  # Leave TBSCertificate SEQUENCE
 
 
-def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca=False):
+def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca=False, pathlen=4):
     filename = filename.lower()
     set_up_algorithm(pk_algorithm, type)
 
     (pk, sk) = get_keys(type, pk_algorithm)
-    write_pem(f"{filename}.pub", b"PUBLIC KEY", public_key_der(algorithm, pk))
-    write_pem(f"{filename}.key", b"PRIVATE KEY", private_key_der(algorithm, sk))
+    write_pem(f"{filename}.pub", b"PUBLIC KEY", public_key_der(pk_algorithm, pk))
+    write_pem(f"{filename}.key", b"PRIVATE KEY", private_key_der(pk_algorithm, sk))
     with open(f"{filename}.pub.bin", "wb") as publickeyfile:
         publickeyfile.write(pk)
     with open(f"{filename}.key.bin", "wb") as secretkeyfile:
@@ -474,10 +475,10 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
     #       signatureValue       BIT STRING  }
 
     encoder.enter(asn1.Numbers.Sequence)  # Certificate
-    write_tbs_certificate(encoder, pk_algorithm, sig_algorithm, pk, is_ca=ca)
+    write_tbs_certificate(encoder, pk_algorithm, sig_algorithm, pk, is_ca=ca, pathlen=pathlen)
     # Write signature algorithm
     write_signature_algorithm(encoder, sig_algorithm)
-    write_signature(encoder, pk_algorithm, sig_algorithm, pk, signing_key)
+    write_signature(encoder, pk_algorithm, sig_algorithm, pk, signing_key, is_ca=ca, pathlen=pathlen)
 
     encoder.leave()  # Leave Certificate SEQUENCE
 
@@ -489,23 +490,23 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
 if __name__ == "__main__":
     root_sign_algorithm = "RainbowIaCyclic"
     intermediate_sign_algorithm = "Falcon512"
-    for algorithm in signs:
-        if algorithm not in (root_sign_algorithm, intermediate_sign_algorithm,):
+    for sigalg in signs:
+        if sigalg not in (root_sign_algorithm, intermediate_sign_algorithm,):
             continue
-        print(f"Generating keys for {algorithm}")
+        print(f"Generating keys for {sigalg}")
         generate(
-            algorithm,
-            algorithm,
-            f"{algorithm}-ca",
-            f"../{algorithm}-ca.key.bin",
+            sigalg,
+            sigalg,
+            f"{sigalg}-ca",
+            f"../{sigalg}-ca.key.bin",
             type="sign",
             ca=True,
         )
         generate(
-            algorithm,
-            algorithm,
-            f"{algorithm}",
-            f"../{algorithm}-ca.key.bin",
+            sigalg,
+            sigalg,
+            f"{sigalg}",
+            f"../{sigalg}-ca.key.bin",
             type="sign",
             ca=False,
         )
@@ -526,6 +527,7 @@ if __name__ == "__main__":
         f"../kem-ca.key.bin",
         type="sign",
         ca=True,
+        pathlen=1,
     )
     for kem_algorithm in kems:
         print(f"Generating KEM cert for {kem_algorithm}")
