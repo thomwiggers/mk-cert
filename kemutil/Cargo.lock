@@ -244,6 +244,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "pqcrypto"
 version = "0.10.0"
 dependencies = [
+ "oqs-sys 0.1.0",
  "pqcrypto-classicmceliece 0.1.0",
  "pqcrypto-dilithium 0.3.1",
  "pqcrypto-falcon 0.2.2",

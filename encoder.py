@@ -192,9 +192,11 @@ def private_key_der(algorithm, sk):
     encoder.enter(asn1.Numbers.Sequence)  # AlgorithmIdentifier
     oid = oids[algorithm]
     encoder.write(f"1.2.6.1.4.1.311.89.2.{16128 + oid}", asn1.Numbers.ObjectIdentifier)
-    encoder.write(None)
+    #encoder.write(None)
     encoder.leave()  # AlgorithmIdentifier
+    encoder.enter(asn1.Numbers.OctetString)
     encoder.write(sk, asn1.Numbers.OctetString)
+    encoder.leave()
     encoder.leave()
     return encoder.output()
 
@@ -439,7 +441,8 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
     extvalue.start()
     extvalue.enter(asn1.Numbers.Sequence)  # Constraints
     extvalue.write(is_ca, asn1.Numbers.Boolean)  # cA = True
-    extvalue.write(pathlen, asn1.Numbers.Integer)  # Max path length
+    if is_ca:
+        extvalue.write(pathlen, asn1.Numbers.Integer)  # Max path length
     extvalue.leave()  # Constraints
     encoder.write(extvalue.output(), asn1.Numbers.OctetString)
     encoder.leave()  # BasicConstraints
@@ -540,7 +543,7 @@ if __name__ == "__main__":
         )
 
         with open(f"{kem_algorithm}.chain.crt", "wb") as file_:
-            with open(f"{kem_algorithm}.crt", "rb") as r:
-                file_.write(r.read())
             with open(f"kem-int.crt", "rb") as r:
+                file_.write(r.read())
+            with open(f"{kem_algorithm}.crt", "rb") as r:
                 file_.write(r.read())
