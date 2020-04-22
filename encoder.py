@@ -552,7 +552,7 @@ if __name__ == "__main__":
         )
 
         with open(f"{kem_algorithm}.chain.crt", "wb") as file_:
-            with open(f"kem-int.crt", "rb") as r:
-                file_.write(r.read())
             with open(f"{kem_algorithm}.crt", "rb") as r:
+                file_.write(r.read())
+            with open(f"kem-int.crt", "rb") as r:
                 file_.write(r.read())
