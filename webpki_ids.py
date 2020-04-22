@@ -10,7 +10,7 @@ if sys.argv[1] == "signs":
         print(
             rf"""
 const {alg}_ID: AlgorithmIdentifier = AlgorithmIdentifier {{
-    asn1_id_value: b"\x06\x0B\x2A\x06\x01\x04\x01\x82\x37\x59\x02\x{oid_bytes>>8:02X}\x{oid_bytes&0xFF:02X}\x05\x00"
+    asn1_id_value: b"\x06\x0B\x2A\x06\x01\x04\x01\x82\x37\x59\x02\x{oid_bytes>>8:02X}\x{oid_bytes&0xFF:02X}"
 }};
 
 /// {alg} signature
@@ -27,7 +27,7 @@ else:
         oid_bytes = 0xFE00 + oid_offset
         print(rf"""
 const {name.upper()}_ID: AlgorithmIdentifier = AlgorithmIdentifier {{
-     asn1_id_value: b"\x06\x0B\x2A\x06\x01\x04\x01\x82\x37\x59\x02\x{oid_bytes>>8:02X}\x{oid_bytes&0xFF:02X}\x05\x00"
+     asn1_id_value: b"\x06\x0B\x2A\x06\x01\x04\x01\x82\x37\x59\x02\x{oid_bytes>>8:02X}\x{oid_bytes&0xFF:02X}"
 }};
 
 /// { name } kem
