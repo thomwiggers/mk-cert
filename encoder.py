@@ -195,9 +195,10 @@ def private_key_der(algorithm, sk):
     encoder.write(f"1.2.6.1.4.1.311.89.2.{16128 + oid}", asn1.Numbers.ObjectIdentifier)
     #encoder.write(None)
     encoder.leave()  # AlgorithmIdentifier
-    encoder.enter(asn1.Numbers.OctetString)
-    encoder.write(sk, asn1.Numbers.OctetString)
-    encoder.leave()
+    nestedencoder = asn1.Encoder()
+    nestedencoder.start()
+    nestedencoder.write(sk, asn1.Numbers.OctetString)
+    encoder.write(nestedencoder.output(), asn1.Numbers.OctetString)
     encoder.leave()
     return encoder.output()
 
@@ -307,7 +308,7 @@ def write_public_key(encoder, algorithm, pk):
     # FIXME: This should be parameterized
     oid = oids[algorithm]
     encoder.write(f"1.2.6.1.4.1.311.89.2.{16128 + oid}", asn1.Numbers.ObjectIdentifier)
-    encoder.write(None)
+    #encoder.write(None)
     encoder.leave()  # AlgorithmIdentifier
     encoder.write(pk, asn1.Numbers.BitString)
     encoder.leave()
@@ -341,7 +342,7 @@ def write_signature_algorithm(encoder, algorithm):
     # This should also be parameterized
     oid = oids[algorithm]
     encoder.write(f"1.2.6.1.4.1.311.89.2.{16128+oid}", asn1.Numbers.ObjectIdentifier)
-    encoder.write(None)  # Parameters
+    #encoder.write(None)  # Parameters
     encoder.leave()  # Leave AlgorithmIdentifier
 
 
