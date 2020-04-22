@@ -6,7 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-asn1 = {editable = true,path = "./../python-asn1"}
+asn1 = "==2.3.1"
 
 [requires]
 python_version = "3"

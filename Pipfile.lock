@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "4e4f7edcdb84734f3f385a458ecff82c014234f28125a5466429ea657f2d6077"
+            "sha256": "2d6b396e27a5980b1e93baad7f4f8e0fe4ccb2d930d64cefbb8c8c6f965d0c25"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,8 +17,11 @@
     },
     "default": {
         "asn1": {
-            "editable": true,
-            "path": "./../python-asn1"
+            "hashes": [
+                "sha256:24be73c0ace0bb827a60979fb63af17608dbd5bf2a8e7f0dde92f56626932b48"
+            ],
+            "index": "pypi",
+            "version": "==2.3.1"
         },
         "enum34": {
             "hashes": [

@@ -13,8 +13,9 @@ import itertools
 DEBUG = False
 
 subenv = os.environ.copy()
-subenv["RUSTFLAGS"] = "-C target-cpu=native"
-subenv["RUST_MIN_STACK"] = str(20*1024*1024)
+if 'RUST_MIN_STACK' not in subenv:
+    subenv["RUSTFLAGS"] = "-C target-cpu=native"
+    subenv["RUST_MIN_STACK"] = str(20*1024*1024)
 
 
 resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
@@ -491,8 +492,14 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
 
 
 if __name__ == "__main__":
-    root_sign_algorithm = "RainbowIaCyclic"
-    intermediate_sign_algorithm = "Falcon512"
+    root_sign_algorithm = os.environ.get("ROOT_SIGALG", "RainbowIaCyclic")
+    intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "Falcon512")
+    kex_alg = os.environ.get("KEX_ALG", "kyber512")
+
+    assert kex_alg in kems
+    assert intermediate_sign_algorithm in signs
+    assert root_sign_algorithm in signs
+
     for sigalg in signs:
         if sigalg not in (root_sign_algorithm, intermediate_sign_algorithm,):
             continue
@@ -533,6 +540,8 @@ if __name__ == "__main__":
         pathlen=1,
     )
     for kem_algorithm in kems:
+        if kem_algorithm != kex_alg:
+            continue
         print(f"Generating KEM cert for {kem_algorithm}")
         generate(
             kem_algorithm,
