@@ -12,6 +12,8 @@ import itertools
 
 DEBUG = False
 
+HOSTNAME = b'servername'
+
 subenv = os.environ.copy()
 if 'RUST_MIN_STACK' not in subenv:
     subenv["RUSTFLAGS"] = "-C target-cpu=native"
@@ -419,8 +421,8 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
         extvalue.start()
         extvalue.enter(asn1.Numbers.Sequence)  # Sequence of names
         extvalue._emit_tag(0x02, asn1.Types.Primitive, asn1.Classes.Context)
-        extvalue._emit_length(len(b"localhost"))
-        extvalue._emit(b"localhost")
+        extvalue._emit_length(len(HOSTNAME))
+        extvalue._emit(HOSTNAME)
         extvalue.leave()  # Sequence of names
         encoder.write(extvalue.output(), asn1.Numbers.OctetString)
         encoder.leave()  # Extension 1
