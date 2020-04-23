@@ -495,32 +495,39 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
 if __name__ == "__main__":
     root_sign_algorithm = os.environ.get("ROOT_SIGALG", "RainbowIaCyclic")
     intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "Falcon512")
+    leaf_sign_algorithm = os.environ.get("LEAF_SIGALG", "Falcon512")
     kex_alg = os.environ.get("KEX_ALG", "kyber512")
 
     assert kex_alg in kems
     assert intermediate_sign_algorithm in signs
     assert root_sign_algorithm in signs
 
-    for sigalg in signs:
-        if sigalg not in (root_sign_algorithm, intermediate_sign_algorithm,):
-            continue
-        print(f"Generating keys for {sigalg}")
-        generate(
-            sigalg,
-            sigalg,
-            f"{sigalg}-ca",
-            f"../{sigalg}-ca.key.bin",
-            type="sign",
-            ca=True,
-        )
-        generate(
-            sigalg,
-            sigalg,
-            f"{sigalg}",
-            f"../{sigalg}-ca.key.bin",
-            type="sign",
-            ca=False,
-        )
+    print(f"Generating keys for {leaf_sign_algorithm} signed by {intermediate_sign_algorithm} signed by {root_sign_algorithm}")
+    generate(
+        root_sign_algorithm,
+        root_sign_algorithm,
+        f"signing-ca",
+        f"../signing-ca.key.bin",
+        type="sign",
+        ca=True,
+    )
+    generate(
+        intermediate_sign_algorithm,
+        root_sign_algorithm,
+        f"signing-int",
+        f"../signing-ca.key.bin",
+        type="sign",
+        ca=True,
+        pathlen=1,
+    )
+    generate(
+        leaf_sign_algorithm,
+        intermediate_sign_algorithm,
+        f"signing",
+        f"../signing-int.key.bin",
+        type="sign",
+        ca=False,
+    )
 
     # KEM certs
     generate(
