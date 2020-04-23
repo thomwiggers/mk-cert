@@ -1,1 +1,1 @@
-pub use pqcrypto::kem::kyber512::*;
+pub use oqs::kem::Algorithm::SikeP434Compressed as thealgorithm;

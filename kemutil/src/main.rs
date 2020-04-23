@@ -22,7 +22,7 @@ mod doingit {
         (pk.into_vec(), sk.into_vec())
     }
 }
-#[cfg(not(any(feature = "oqs", feature="pqcrypto")))]
+#[cfg(not(any(feature = "liboqs", feature="pqcrypto")))]
 mod doingit {
     pub fn do_keypair() -> ! {
         panic!("No implementation feature specified");
