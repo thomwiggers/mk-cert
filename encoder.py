@@ -258,11 +258,11 @@ def set_up_kem_algorithm(algorithm):
 
 def run_signutil(example, alg, *args):
     if alg == "XMSS":
-        cwd = "../xmss-rs"
+        cwd = "xmss-rs"
     else:
         cwd = "signutil"
 
-    print(f"Running 'cargo run --example {example} {' '.join(args)}'")
+    print(f"Running 'cargo run --example {example} {' '.join(args)}' in {cwd}")
     subprocess.run(
         [*"cargo run --release --example".split(), example, *args],
         cwd=cwd,
@@ -301,9 +301,9 @@ def get_kem_keys(algorithm):
 def get_sig_keys(alg):
     run_signutil("keygen", alg)
     if alg == "XMSS":
-        with open("../xmss-rs/publickey.bin", "rb") as f:
+        with open("xmss-rs/publickey.bin", "rb") as f:
             pk = f.read()
-        with open("../xmss-rs/secretkey.bin", "rb") as f:
+        with open("xmss-rs/secretkey.bin", "rb") as f:
             sk = f.read()
     else:
         with open("signutil/publickey.bin", "rb") as f:
