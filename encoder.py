@@ -90,6 +90,7 @@ signs = [
     "Picnic2L5Fs",
     "QTeslaPI",
     "QTeslaPIII",
+    "XMSS",
 ]
 
 kems = [
@@ -238,9 +239,10 @@ def set_up_algorithm(algorithm, type):
 
 
 def set_up_sign_algorithm(algorithm):
-    content = f"pub use oqs::sig::Algorithm::{algorithm} as alg;"
-    with open("signutil/src/lib.rs", "w") as f:
-        f.write(content)
+    if algorithm != "XMSS":
+        content = f"pub use oqs::sig::Algorithm::{algorithm} as alg;"
+        with open("signutil/src/lib.rs", "w") as f:
+            f.write(content)
 
 
 def set_up_kem_algorithm(algorithm):
@@ -254,11 +256,16 @@ def set_up_kem_algorithm(algorithm):
         f.write(content)
 
 
-def run_signutil(example, *args):
+def run_signutil(example, alg, *args):
+    if alg == "XMSS":
+        cwd = "../xmss-rs"
+    else:
+        cwd = "signutil"
+
     print(f"Running 'cargo run --example {example} {' '.join(args)}'")
     subprocess.run(
         [*"cargo run --release --example".split(), example, *args],
-        cwd="signutil",
+        cwd=cwd,
         check=True,
         capture_output=True,
         env=subenv,
@@ -269,7 +276,7 @@ def get_keys(type, algorithm):
     if type == "kem":
         return get_kem_keys(algorithm)
     elif type == "sign":
-        return get_sig_keys()
+        return get_sig_keys(algorithm)
 
 
 def get_kem_keys(algorithm):
@@ -291,12 +298,18 @@ def get_kem_keys(algorithm):
     return (pk, sk)
 
 
-def get_sig_keys():
-    run_signutil("keygen")
-    with open("signutil/publickey.bin", "rb") as f:
-        pk = f.read()
-    with open("signutil/secretkey.bin", "rb") as f:
-        sk = f.read()
+def get_sig_keys(alg):
+    run_signutil("keygen", alg)
+    if alg == "XMSS":
+        with open("../xmss-rs/publickey.bin", "rb") as f:
+            pk = f.read()
+        with open("../xmss-rs/secretkey.bin", "rb") as f:
+            sk = f.read()
+    else:
+        with open("signutil/publickey.bin", "rb") as f:
+            pk = f.read()
+        with open("signutil/secretkey.bin", "rb") as f:
+            sk = f.read()
     return (pk, sk)
 
 
@@ -329,7 +342,7 @@ def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, 
     # Sign tbscertificate_bytes
     if DEBUG:
         time.sleep(2)
-    run_signutil("signer", signing_key.lower(), f"../{tbscertbytes_file}", f"../{tbssig_file}")
+    run_signutil("signer", sign_algorithm, signing_key.lower(), f"../{tbscertbytes_file}", f"../{tbssig_file}")
 
     # Obtain signature
     with open(tbssig_file, "rb") as f:
