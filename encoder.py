@@ -544,6 +544,12 @@ if __name__ == "__main__":
         ca=False,
     )
 
+    with open("signing.chain.crt", "w") as f:
+        with open(f"signing.crt", "rb") as r:
+            f.write(r.read())
+        with open(f"signing-int.crt", "rb") as r:
+            f.write(r.read())
+
     # KEM certs
     generate(
         root_sign_algorithm,
