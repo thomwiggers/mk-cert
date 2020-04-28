@@ -4,9 +4,11 @@ import subprocess
 import base64
 from io import BytesIO
 import re
+import sys
 import os
 import resource
 import time
+import shutil
 
 import itertools
 
@@ -507,11 +509,25 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
     write_pem(f"{filename}.crt", b"CERTIFICATE", encoder.output())
 
 
+
+def get_classic_certs():
+    shutil.copyfile('rsas-int/x25519/x25519.pub', 'signing.pub')
+    shutil.copyfile('rsas-int/x25519/x25519.crt', 'signing.crt')
+    shutil.copyfile('rsas-int/x25519/x25519.chain.crt', 'signing.chain.crt')
+    shutil.copyfile('rsas-int/x25519/x25519.key', 'signing.key')
+    shutil.copyfile('rsas-int/pki/ca.crt', 'signing-int.crt')
+    shutil.copyfile('rsas-root/pki/ca.crt', 'signing-ca.crt')
+
+
 if __name__ == "__main__":
     root_sign_algorithm = os.environ.get("ROOT_SIGALG", "RainbowIaCyclic")
     intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "Falcon512")
     leaf_sign_algorithm = os.environ.get("LEAF_SIGALG", "Falcon512")
     kex_alg = os.environ.get("KEX_ALG", "kyber512")
+    if kex_alg == "X25519":
+        get_classic_certs()
+        print("not doing anything for x25519")
+        sys.exit(0)
 
     assert kex_alg in kems
     assert intermediate_sign_algorithm in signs
