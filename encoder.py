@@ -516,7 +516,9 @@ def get_classic_certs():
     shutil.copyfile('rsas-int/x25519/x25519.chain.crt', 'kem.chain.crt')
     shutil.copyfile('rsas-int/x25519/x25519.key', 'kem.key')
     shutil.copyfile('rsas-int/pki/ca.crt', 'signing-int.crt')
+    shutil.copyfile('rsas-int/pki/ca.crt', 'kem-int.crt')
     shutil.copyfile('rsas-root/pki/ca.crt', 'signing-ca.crt')
+    shutil.copyfile('rsas-root/pki/ca.crt', 'kem-ca.crt')
     shutil.copyfile('rsas-int/pki/issued/servername.crt', 'signing.crt')
     shutil.copyfile('rsas-int/pki/private/servername.key', 'signing.key')
     with open("signing.chain.crt", "wb") as f:
