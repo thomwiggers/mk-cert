@@ -511,12 +511,14 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
 
 
 def get_classic_certs():
-    shutil.copyfile('rsas-int/x25519/x25519.pub', 'signing.pub')
-    shutil.copyfile('rsas-int/x25519/x25519.crt', 'signing.crt')
-    shutil.copyfile('rsas-int/x25519/x25519.chain.crt', 'signing.chain.crt')
-    shutil.copyfile('rsas-int/x25519/x25519.key', 'signing.key')
+    shutil.copyfile('rsas-int/x25519/x25519.pub', 'kem.pub')
+    shutil.copyfile('rsas-int/x25519/x25519.crt', 'kem.crt')
+    shutil.copyfile('rsas-int/x25519/x25519.chain.crt', 'kem.chain.crt')
+    shutil.copyfile('rsas-int/x25519/x25519.key', 'kem.key')
     shutil.copyfile('rsas-int/pki/ca.crt', 'signing-int.crt')
     shutil.copyfile('rsas-root/pki/ca.crt', 'signing-ca.crt')
+    shutil.copyfile('rsas-int/pki/issued/servername.crt', 'signing.crt')
+    shutil.copyfile('rsas-int/pki/private/servername.key', 'signing.key')
 
 
 if __name__ == "__main__":
