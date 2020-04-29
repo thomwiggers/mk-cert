@@ -93,6 +93,7 @@ signs = [
     "QTeslaPI",
     "QTeslaPIII",
     "XMSS",
+    "Gemss128"
 ]
 
 kems = [
