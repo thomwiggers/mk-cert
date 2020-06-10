@@ -61,7 +61,7 @@ x509_extensions		= easyrsa_ca	# The extensions to add to the self signed cert
 req_extensions = v3_req
 
 [v3_req]
-subjectAltName = DNS:localhost
+subjectAltName = DNS:servername
 basicConstraints = CA:false
 extendedKeyUsage = critical,serverAuth
 
