@@ -7,10 +7,4 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pqcrypto = { path = "../../pqcrypto/pqcrypto", optional = true}
-csidh-rust = { path = "../../csidh-rust/", optional = true }
-oqs = {path = "../../oqs-rs/oqs/" }
-
-[features]
-pqclean = ["pqcrypto", "csidh-rust"]
-liboqs = []
+oqs = "0.3"

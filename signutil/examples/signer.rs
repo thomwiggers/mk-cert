@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let sigalg = Sig::new(alg).unwrap();
     let sk_content = &fs::read(sk_filename)?;
-    let sk = sigalg.secret_key_from_bytes(&sk_content);
+    let sk = sigalg.secret_key_from_bytes(&sk_content).unwrap();
     let signature = sigalg.sign(&fs::read(in_filename)?, &sk).unwrap();
 
     sigfile.write_all(signature.as_ref())?;

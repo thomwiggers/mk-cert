@@ -16,10 +16,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (pk_filename, in_filename, sig_filename) = parseargs();
     let sigalg = Sig::new(alg).unwrap();
     let pk = &fs::read(pk_filename)?;
-    let pk = sigalg.public_key_from_bytes(pk);
+    let pk = sigalg.public_key_from_bytes(pk).unwrap();
     let msg = &fs::read(in_filename)?;
     let sig = &fs::read(sig_filename)?;
-    let sig = sigalg.signature_from_bytes(sig);
+    let sig = sigalg.signature_from_bytes(sig).unwrap();
 
     if let Ok(()) = sigalg.verify(msg, &sig, &pk) {
         println!("Verification success!");

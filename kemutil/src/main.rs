@@ -3,16 +3,6 @@ use std::io::prelude::*;
 
 mod kem;
 
-#[cfg(feature = "pqclean")]
-mod doingit{
-    use crate::kem::keypair;
-    pub fn do_keypair() -> (Vec<u8>, Vec<u8>) {
-        let (pk, sk)= keypair();
-        (pk.as_ref().to_vec(), sk.as_ref().to_vec())
-    }
-}
-
-#[cfg(feature = "liboqs")]
 mod doingit {
     use crate::kem::thealgorithm;
     use oqs::kem::*;
@@ -22,13 +12,6 @@ mod doingit {
         (pk.into_vec(), sk.into_vec())
     }
 }
-#[cfg(not(any(feature = "liboqs", feature="pqcrypto")))]
-mod doingit {
-    pub fn do_keypair() -> ! {
-        panic!("No implementation feature specified");
-    }
-}
-
 
 fn main() -> std::io::Result<()> {
     let (pk, sk) = doingit::do_keypair();

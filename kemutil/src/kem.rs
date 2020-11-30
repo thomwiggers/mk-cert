@@ -1,1 +1,1 @@
-pub use pqcrypto::kem::kyber512::*;
+pub use oqs::kem::Algorithm::Kyber512 as thealgorithm;

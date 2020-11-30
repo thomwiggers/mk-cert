@@ -3,14 +3,12 @@ from datetime import datetime, timedelta
 import subprocess
 import base64
 from io import BytesIO
-import re
 import sys
 import os
 import resource
 import time
 import shutil
 
-import itertools
 
 DEBUG = False
 
@@ -24,164 +22,7 @@ if 'RUST_MIN_STACK' not in subenv:
 
 resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
-def camel_to_snake(name):
-  name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-  return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
-
-signs = [
-    "Dilithium2",
-    "Dilithium3",
-    "Dilithium4",
-    "Falcon512",
-    "Falcon1024",
-    "MQDSS3148",
-    "MQDSS3164",
-    "RainbowIaClassic",
-    "RainbowIaCyclic",
-    "RainbowIaCyclicCompressed",
-    "RainbowIIIcclassic",
-    "RainbowIIIcCyclic",
-    "RainbowIIIcCyclicCompressed",
-    "RainbowVcClassic",
-    "RainbowVcCyclic",
-    "RainbowVcCyclicCompressed",
-    "SphincsHaraka128fRobust",
-    "SphincsHaraka128fSimple",
-    "SphincsHaraka128sRobust",
-    "SphincsHaraka128sSimple",
-    "SphincsHaraka192fRobust",
-    "SphincsHaraka192fSimple",
-    "SphincsHaraka192sRobust",
-    "SphincsHaraka192sSimple",
-    "SphincsHaraka256fRobust",
-    "SphincsHaraka256fSimple",
-    "SphincsHaraka256sRobust",
-    "SphincsHaraka256sSimple",
-    "SphincsSha256128fRobust",
-    "SphincsSha256128fSimple",
-    "SphincsSha256128sRobust",
-    "SphincsSha256128sSimple",
-    "SphincsSha256192fRobust",
-    "SphincsSha256192fSimple",
-    "SphincsSha256192sRobust",
-    "SphincsSha256192sSimple",
-    "SphincsSha256256fRobust",
-    "SphincsSha256256fSimple",
-    "SphincsSha256256sRobust",
-    "SphincsSha256256sSimple",
-    "SphincsShake256128fRobust",
-    "SphincsShake256128fSimple",
-    "SphincsShake256128sRobust",
-    "SphincsShake256128sSimple",
-    "SphincsShake256192fRobust",
-    "SphincsShake256192fSimple",
-    "SphincsShake256192sRobust",
-    "SphincsShake256192sSimple",
-    "SphincsShake256256fRobust",
-    "SphincsShake256256fSimple",
-    "SphincsShake256256sRobust",
-    "SphincsShake256256sSimple",
-    "PicnicL1Fs",
-    "PicnicL1Ur",
-    "PicnicL3Fs",
-    "PicnicL3Ur",
-    "PicnicL5Fs",
-    "PicnicL5Ur",
-    "Picnic2L1Fs",
-    "Picnic2L3Fs",
-    "Picnic2L5Fs",
-    "QTeslaPI",
-    "QTeslaPIII",
-    "XMSS",
-    "Gemss128"
-]
-
-kems = [
-    # CSIDH
-    "csidh",
-    # kyber
-    "kyber512",
-    "kyber768",
-    "kyber1024",
-    # kyber90s
-    "kyber51290s",
-    "kyber76890s",
-    "kyber102490s",
-    # threebears
-    "babybear",
-    "babybearephem",
-    "mamabear",
-    "mamabearephem",
-    "papabear",
-    "papabearephem",
-    # SABER
-    "lightsaber",
-    "saber",
-    "firesaber",
-    # leda
-    "ledakemlt12",
-    "ledakemlt32",
-    "ledakemlt52",
-    # newhope
-    "newhope512cpa",
-    "newhope512cca",
-    "newhope1024cpa",
-    "newhope1024cca",
-    # NTRU
-    "ntruhps2048509",
-    "ntruhps2048677",
-    "ntruhps4096821",
-    "ntruhrss701",
-    # Frodo
-    "frodokem640aes",
-    "frodokem640shake",
-    "frodokem976aes",
-    "frodokem976shake",
-    "frodokem1344aes",
-    "frodokem1344shake",
-    # McEliece
-    "mceliece348864",
-    "mceliece348864f",
-    "mceliece460896",
-    "mceliece460896f",
-    "mceliece6688128",
-    "mceliece6688128f",
-    "mceliece6960119",
-    "mceliece6960119f",
-    "mceliece8192128",
-    "mceliece8192128f",
-    # hqc
-    "hqc1281cca2",
-    "hqc1921cca2",
-    "hqc1922cca2",
-    "hqc2561cca2",
-    "hqc2562cca2",
-    "hqc2563cca2",
-]
-
-OQS_KEMS = [
-    ("bikel1fo", "BikeL1Fo"),
-    ("sikep434compressed", "SikeP434Compressed"),
-]
-
-kems.extend((kem for (kem, _) in OQS_KEMS))
-
-
-def is_oqs_algorithm(algorithm):
-    for (kem, _) in OQS_KEMS:
-        if kem == algorithm:
-            return True
-    return False
-
-
-def get_oqs_algorithm(algorithm):
-    for (kem, alg) in OQS_KEMS:
-        if kem == algorithm:
-            return alg
-    return False
-
-
-oids = {var: i for (i, var) in enumerate(itertools.chain(signs, kems))}
+from algorithms import kems,  signs, get_oid, get_oqs_id
 
 
 def public_key_der(algorithm, pk):
@@ -197,8 +38,8 @@ def private_key_der(algorithm, sk):
     encoder.enter(asn1.Numbers.Sequence)
     encoder.write(0, asn1.Numbers.Integer)
     encoder.enter(asn1.Numbers.Sequence)  # AlgorithmIdentifier
-    oid = oids[algorithm]
-    encoder.write(f"1.2.6.1.4.1.311.89.2.{16128 + oid}", asn1.Numbers.ObjectIdentifier)
+    oid = get_oid(algorithm)
+    encoder.write(oid, asn1.Numbers.ObjectIdentifier)
     #encoder.write(None)
     encoder.leave()  # AlgorithmIdentifier
     nestedencoder = asn1.Encoder()
@@ -243,18 +84,13 @@ def set_up_algorithm(algorithm, type):
 
 def set_up_sign_algorithm(algorithm):
     if algorithm != "XMSS":
-        content = f"pub use oqs::sig::Algorithm::{algorithm} as alg;"
+        content = f"pub use oqs::sig::Algorithm::{get_oqs_id(algorithm)} as alg;"
         with open("signutil/src/lib.rs", "w") as f:
             f.write(content)
 
 
 def set_up_kem_algorithm(algorithm):
-    if algorithm == "csidh":
-        content = f"pub use csidh_rust::*;"
-    elif is_oqs_algorithm(algorithm):
-        content = f"pub use oqs::kem::Algorithm::{get_oqs_algorithm(algorithm)} as thealgorithm;"
-    else:
-        content = f"pub use pqcrypto::kem::{algorithm}::*;"
+    content = f"pub use oqs::kem::Algorithm::{get_oqs_id(algorithm)} as thealgorithm;"
     with open("kemutil/src/kem.rs", "w") as f:
         f.write(content)
 
@@ -283,12 +119,8 @@ def get_keys(type, algorithm):
 
 
 def get_kem_keys(algorithm):
-    if is_oqs_algorithm(algorithm):
-        variant = "liboqs"
-    else:
-        variant = "pqclean"
     subprocess.run(
-        ["cargo", "run", "--release", "--features", variant],
+        ["cargo", "run", "--release"],
         cwd="kemutil",
         check=True,
         env=subenv,
@@ -324,8 +156,7 @@ def write_public_key(encoder, algorithm, pk):
     encoder.enter(asn1.Numbers.Sequence)  # SubjectPublicKeyInfo
     encoder.enter(asn1.Numbers.Sequence)  # AlgorithmIdentifier
     # FIXME: This should be parameterized
-    oid = oids[algorithm]
-    encoder.write(f"1.2.6.1.4.1.311.89.2.{16128 + oid}", asn1.Numbers.ObjectIdentifier)
+    encoder.write(get_oid(algorithm), asn1.Numbers.ObjectIdentifier)
     #encoder.write(None)
     encoder.leave()  # AlgorithmIdentifier
     encoder.write(pk, asn1.Numbers.BitString)
@@ -357,9 +188,7 @@ def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, 
 
 def write_signature_algorithm(encoder, algorithm):
     encoder.enter(asn1.Numbers.Sequence)  # enter algorithmidentifier
-    # This should also be parameterized
-    oid = oids[algorithm]
-    encoder.write(f"1.2.6.1.4.1.311.89.2.{16128+oid}", asn1.Numbers.ObjectIdentifier)
+    encoder.write(get_oid(algorithm), asn1.Numbers.ObjectIdentifier)
     #encoder.write(None)  # Parameters
     encoder.leave()  # Leave AlgorithmIdentifier
 
@@ -523,40 +352,40 @@ def get_classic_certs():
     shutil.copyfile('rsas-int/pki/issued/servername.crt', 'signing.crt')
     shutil.copyfile('rsas-int/pki/private/servername.key', 'signing.key')
     with open("signing.chain.crt", "wb") as f:
-        with open(f"signing.crt", "rb") as r:
+        with open("signing.crt", "rb") as r:
             f.write(r.read())
-        with open(f"signing-int.crt", "rb") as r:
+        with open("signing-int.crt", "rb") as r:
             f.write(r.read())
 
 
 if __name__ == "__main__":
-    root_sign_algorithm = os.environ.get("ROOT_SIGALG", "RainbowIaCyclic")
-    intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "Falcon512")
-    leaf_sign_algorithm = os.environ.get("LEAF_SIGALG", "Falcon512")
+    root_sign_algorithm = os.environ.get("ROOT_SIGALG", "dilithium2")
+    intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "dilithium2")
+    leaf_sign_algorithm = os.environ.get("LEAF_SIGALG", "dilithium2")
     kex_alg = os.environ.get("KEX_ALG", "kyber512")
     if kex_alg == "X25519":
         get_classic_certs()
         print("not doing anything for x25519")
         sys.exit(0)
 
-    assert kex_alg in kems
-    assert intermediate_sign_algorithm in signs
-    assert root_sign_algorithm in signs
+    assert kex_alg in dict(kems).keys()
+    assert intermediate_sign_algorithm in dict(signs).keys()
+    assert root_sign_algorithm in dict(signs).keys()
 
     print(f"Generating keys for {leaf_sign_algorithm} signed by {intermediate_sign_algorithm} signed by {root_sign_algorithm}")
     generate(
         root_sign_algorithm,
         root_sign_algorithm,
-        f"signing-ca",
-        f"../signing-ca.key.bin",
+        "signing-ca",
+        "../signing-ca.key.bin",
         type="sign",
         ca=True,
     )
     generate(
         intermediate_sign_algorithm,
         root_sign_algorithm,
-        f"signing-int",
-        f"../signing-ca.key.bin",
+        "signing-int",
+        "../signing-ca.key.bin",
         type="sign",
         ca=True,
         pathlen=1,
@@ -564,24 +393,24 @@ if __name__ == "__main__":
     generate(
         leaf_sign_algorithm,
         intermediate_sign_algorithm,
-        f"signing",
-        f"../signing-int.key.bin",
+        "signing",
+        "../signing-int.key.bin",
         type="sign",
         ca=False,
     )
 
     with open("signing.chain.crt", "wb") as f:
-        with open(f"signing.crt", "rb") as r:
+        with open("signing.crt", "rb") as r:
             f.write(r.read())
-        with open(f"signing-int.crt", "rb") as r:
+        with open("signing-int.crt", "rb") as r:
             f.write(r.read())
 
     # KEM certs
     generate(
         root_sign_algorithm,
         root_sign_algorithm,
-        f"kem-ca",
-        f"../kem-ca.key.bin",
+        "kem-ca",
+        "../kem-ca.key.bin",
         type="sign",
         ca=True,
     )
@@ -589,25 +418,22 @@ if __name__ == "__main__":
         intermediate_sign_algorithm,
         root_sign_algorithm,
         "kem-int",
-        f"../kem-ca.key.bin",
+        "../kem-ca.key.bin",
         type="sign",
         ca=True,
         pathlen=1,
     )
-    for kem_algorithm in kems:
-        if kem_algorithm != kex_alg:
-            continue
-        print(f"Generating KEM cert for {kem_algorithm}")
-        generate(
-            kem_algorithm,
-            intermediate_sign_algorithm,
-            f"{kem_algorithm}",
-            f"../kem-int.key.bin",
-            type="kem",
-        )
+    print(f"Generating KEM cert for {kex_alg}")
+    generate(
+        kex_alg,
+        intermediate_sign_algorithm,
+        f"{kex_alg}",
+        "../kem-int.key.bin",
+        type="kem",
+    )
 
-        with open(f"{kem_algorithm}.chain.crt", "wb") as file_:
-            with open(f"{kem_algorithm}.crt", "rb") as r:
-                file_.write(r.read())
-            with open(f"kem-int.crt", "rb") as r:
-                file_.write(r.read())
+    with open(f"{kex_alg}.chain.crt", "wb") as file_:
+        with open(f"{kex_alg}.crt", "rb") as r:
+            file_.write(r.read())
+        with open("kem-int.crt", "rb") as r:
+            file_.write(r.read())
