@@ -42,10 +42,11 @@ def private_key_der(algorithm, sk):
     encoder.write(oid, asn1.Numbers.ObjectIdentifier)
     #encoder.write(None)
     encoder.leave()  # AlgorithmIdentifier
-    nestedencoder = asn1.Encoder()
-    nestedencoder.start()
-    nestedencoder.write(sk, asn1.Numbers.OctetString)
-    encoder.write(nestedencoder.output(), asn1.Numbers.OctetString)
+    #nestedencoder = asn1.Encoder()
+    #nestedencoder.start()
+    #nestedencoder.write(sk, asn1.Numbers.OctetString)
+    #encoder.write(nestedencoder.output(), asn1.Numbers.OctetString)
+    encoder.write(sk, asn1.Numbers.OctetString)
     encoder.leave()
     return encoder.output()
 
