@@ -12,7 +12,7 @@ import shutil
 
 DEBUG = False
 
-HOSTNAME = b'servername'
+HOSTNAMES = list(map(lambda x: x.encode(), os.environ.get('HOSTNAMES', 'servername').split(",")))
 
 subenv = os.environ.copy()
 if 'RUST_MIN_STACK' not in subenv:
@@ -164,10 +164,10 @@ def write_public_key(encoder, algorithm, pk):
     encoder.leave()
 
 
-def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, pathlen):
+def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, pathlen, subject, issuer):
     tbsencoder = asn1.Encoder()
     tbsencoder.start()
-    write_tbs_certificate(tbsencoder, algorithm, sign_algorithm, pk, is_ca=is_ca, pathlen=pathlen)
+    write_tbs_certificate(tbsencoder, algorithm, sign_algorithm, pk, is_ca=is_ca, pathlen=pathlen, subject=subject, issuer=issuer)
     tbscertificate_bytes = tbsencoder.output()
     tbscertbytes_file = f"tbscertbytes_for{algorithm}_by_{signing_key[3:].lower()}.bin"
     tbssig_file = f"tbs_sig_for-{algorithm}-by-{signing_key[3:].lower()}.bin"
@@ -194,7 +194,7 @@ def write_signature_algorithm(encoder, algorithm):
     encoder.leave()  # Leave AlgorithmIdentifier
 
 
-def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, pathlen=4):
+def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, pathlen=4, subject="ThomCert", issuer="ThomCert"):
     #  TBSCertificate  ::=  SEQUENCE  {
     #      version         [0]  EXPLICIT Version DEFAULT v1,
     #      serialNumber         CertificateSerialNumber,
@@ -223,7 +223,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
     encoder.enter(asn1.Numbers.Set)  # Set of attributes
     encoder.enter(asn1.Numbers.Sequence)
     encoder.write("2.5.4.3", asn1.Numbers.ObjectIdentifier)  # commonName
-    encoder.write("ThomCert", asn1.Numbers.PrintableString)
+    encoder.write(issuer, asn1.Numbers.PrintableString)
     encoder.leave()  # commonName
     encoder.leave()  # Set
     encoder.leave()  # Name
@@ -241,7 +241,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
         encoder.enter(asn1.Numbers.Set)  # Set of attributes
         encoder.enter(asn1.Numbers.Sequence)
         encoder.write("2.5.4.3", asn1.Numbers.ObjectIdentifier)  # commonName
-        encoder.write("ThomCert", asn1.Numbers.PrintableString)
+        encoder.write(subject, asn1.Numbers.PrintableString)
         encoder.leave()  # commonName
         encoder.leave()  # Set
     encoder.leave()  # empty Name: use subjectAltName (critical!)
@@ -266,9 +266,10 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
         encoder.write(True, asn1.Numbers.Boolean)  # Critical
         extvalue.start()
         extvalue.enter(asn1.Numbers.Sequence)  # Sequence of names
-        extvalue._emit_tag(0x02, asn1.Types.Primitive, asn1.Classes.Context)
-        extvalue._emit_length(len(HOSTNAME))
-        extvalue._emit(HOSTNAME)
+        for name in HOSTNAMES:
+            extvalue._emit_tag(0x02, asn1.Types.Primitive, asn1.Classes.Context)
+            extvalue._emit_length(len(name))
+            extvalue._emit(name)
         extvalue.leave()  # Sequence of names
         encoder.write(extvalue.output(), asn1.Numbers.OctetString)
         encoder.leave()  # Extension 1
@@ -278,6 +279,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
         encoder.enter(asn1.Numbers.Sequence)  # Extension 2
         encoder.write("2.5.29.37", asn1.Numbers.ObjectIdentifier)
         encoder.write(False, asn1.Numbers.Boolean)  # Critical
+        extvalue = asn1.Encoder()
         extvalue.start()
         extvalue.enter(asn1.Numbers.Sequence)  # Key Usages
         extvalue.write("1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier)
@@ -288,6 +290,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
     encoder.enter(asn1.Numbers.Sequence)  # Extension CA
     encoder.write("2.5.29.19", asn1.Numbers.ObjectIdentifier)  # BasicConstr
     encoder.write(True, asn1.Numbers.Boolean)  # Critical
+    extvalue = asn1.Encoder()
     extvalue.start()
     extvalue.enter(asn1.Numbers.Sequence)  # Constraints
     extvalue.write(is_ca, asn1.Numbers.Boolean)  # cA = True
@@ -304,7 +307,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
     encoder.leave()  # Leave TBSCertificate SEQUENCE
 
 
-def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca=False, pathlen=4):
+def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca=False, pathlen=4, subject="ThomCert", issuer="ThomCert"):
     filename = filename.lower()
     set_up_algorithm(pk_algorithm, type)
 
@@ -328,10 +331,10 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
     #       signatureValue       BIT STRING  }
 
     encoder.enter(asn1.Numbers.Sequence)  # Certificate
-    write_tbs_certificate(encoder, pk_algorithm, sig_algorithm, pk, is_ca=ca, pathlen=pathlen)
+    write_tbs_certificate(encoder, pk_algorithm, sig_algorithm, pk, is_ca=ca, pathlen=pathlen, subject=subject, issuer=issuer)
     # Write signature algorithm
     write_signature_algorithm(encoder, sig_algorithm)
-    write_signature(encoder, pk_algorithm, sig_algorithm, pk, signing_key, is_ca=ca, pathlen=pathlen)
+    write_signature(encoder, pk_algorithm, sig_algorithm, pk, signing_key, is_ca=ca, pathlen=pathlen, subject=subject, issuer=issuer)
 
     encoder.leave()  # Leave Certificate SEQUENCE
 
@@ -373,6 +376,8 @@ if __name__ == "__main__":
     assert intermediate_sign_algorithm in dict(signs).keys()
     assert root_sign_algorithm in dict(signs).keys()
 
+    print(f"Hostnames: {HOSTNAMES}")
+
     print(f"Generating keys for {leaf_sign_algorithm} signed by {intermediate_sign_algorithm} signed by {root_sign_algorithm}")
     generate(
         root_sign_algorithm,
@@ -381,6 +386,8 @@ if __name__ == "__main__":
         "../signing-ca.key.bin",
         type="sign",
         ca=True,
+        subject="ThomCert CA",
+        issuer="ThomCert CA",
     )
     generate(
         intermediate_sign_algorithm,
@@ -390,6 +397,8 @@ if __name__ == "__main__":
         type="sign",
         ca=True,
         pathlen=1,
+        subject="ThomCert Int CA",
+        issuer="ThomCert CA",
     )
     generate(
         leaf_sign_algorithm,
@@ -398,6 +407,8 @@ if __name__ == "__main__":
         "../signing-int.key.bin",
         type="sign",
         ca=False,
+        issuer="ThomCert Int CA",
+        subject="",
     )
 
     with open("signing.chain.crt", "wb") as f:
@@ -405,6 +416,8 @@ if __name__ == "__main__":
             f.write(r.read())
         with open("signing-int.crt", "rb") as r:
             f.write(r.read())
+
+    print("KEM Certificate time")
 
     # KEM certs
     generate(
@@ -414,6 +427,8 @@ if __name__ == "__main__":
         "../kem-ca.key.bin",
         type="sign",
         ca=True,
+        issuer="ThomCert CA",
+        subject="ThomCert CA"
     )
     generate(
         intermediate_sign_algorithm,
@@ -423,6 +438,8 @@ if __name__ == "__main__":
         type="sign",
         ca=True,
         pathlen=1,
+        issuer="ThomCert CA",
+        subject="ThomCert Int CA"
     )
     print(f"Generating KEM cert for {kex_alg}")
     generate(
@@ -431,6 +448,7 @@ if __name__ == "__main__":
         f"{kex_alg}",
         "../kem-int.key.bin",
         type="kem",
+        issuer="ThomCert Int CA",
     )
 
     with open(f"{kex_alg}.chain.crt", "wb") as file_:
