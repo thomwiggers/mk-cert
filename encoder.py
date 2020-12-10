@@ -164,10 +164,10 @@ def write_public_key(encoder, algorithm, pk):
     encoder.leave()
 
 
-def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, pathlen, subject, issuer):
+def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, pathlen, subject, issuer, client_auth):
     tbsencoder = asn1.Encoder()
     tbsencoder.start()
-    write_tbs_certificate(tbsencoder, algorithm, sign_algorithm, pk, is_ca=is_ca, pathlen=pathlen, subject=subject, issuer=issuer)
+    write_tbs_certificate(tbsencoder, algorithm, sign_algorithm, pk, is_ca=is_ca, pathlen=pathlen, subject=subject, issuer=issuer, client_auth=client_auth)
     tbscertificate_bytes = tbsencoder.output()
     tbscertbytes_file = f"tbscertbytes_for{algorithm}_by_{signing_key[3:].lower()}.bin"
     tbssig_file = f"tbs_sig_for-{algorithm}-by-{signing_key[3:].lower()}.bin"
@@ -194,7 +194,7 @@ def write_signature_algorithm(encoder, algorithm):
     encoder.leave()  # Leave AlgorithmIdentifier
 
 
-def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, pathlen=4, subject="ThomCert", issuer="ThomCert"):
+def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, pathlen=4, subject="ThomCert", issuer="ThomCert", client_auth=False):
     #  TBSCertificate  ::=  SEQUENCE  {
     #      version         [0]  EXPLICIT Version DEFAULT v1,
     #      serialNumber         CertificateSerialNumber,
@@ -205,14 +205,14 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
     #      subjectPublicKeyInfo SubjectPublicKeyInfo,
     #      issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
     #         -- If present, version MUST be v2 or v3
-    #          subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
+    #      subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
     #            -- If present, version MUST be v2 or v3
-    #       extensions      [3]  EXPLICIT Extensions OPTIONAL
+    #      extensions      [3]  EXPLICIT Extensions OPTIONAL
     #            -- If present, version MUST be v3
     #  }
     encoder.enter(asn1.Numbers.Sequence)
     encoder.enter(0, cls=asn1.Classes.Context)  # [0]
-    encoder.write(2)  # version
+    encoder.write(2)  # version 3
     encoder.leave()  # [0]
     encoder.write(1)  # serialnumber
 
@@ -237,7 +237,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
 
     # Subject
     encoder.enter(asn1.Numbers.Sequence)  # Name
-    if is_ca:
+    if is_ca or client_auth:
         encoder.enter(asn1.Numbers.Set)  # Set of attributes
         encoder.enter(asn1.Numbers.Sequence)
         encoder.write("2.5.4.3", asn1.Numbers.ObjectIdentifier)  # commonName
@@ -260,7 +260,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
     encoder.enter(3, cls=asn1.Classes.Context)  # [3]
     encoder.enter(asn1.Numbers.Sequence)  # Extensions
     extvalue = asn1.Encoder()
-    if not is_ca:
+    if not is_ca and not client_auth:
         encoder.enter(asn1.Numbers.Sequence)  # Extension 1
         encoder.write("2.5.29.17", asn1.Numbers.ObjectIdentifier)
         encoder.write(True, asn1.Numbers.Boolean)  # Critical
@@ -282,7 +282,10 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
         extvalue = asn1.Encoder()
         extvalue.start()
         extvalue.enter(asn1.Numbers.Sequence)  # Key Usages
-        extvalue.write("1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier)
+        if client_auth:
+            extvalue.write("1.3.6.1.5.5.7.3.2", asn1.Numbers.ObjectIdentifier)  # clientAuth
+        else:
+            extvalue.write("1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier)  # serverAuth
         extvalue.leave()  # Key Usages
         encoder.write(extvalue.output(), asn1.Numbers.OctetString)
         encoder.leave()  # Extension 2
@@ -307,7 +310,7 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
     encoder.leave()  # Leave TBSCertificate SEQUENCE
 
 
-def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca=False, pathlen=4, subject="ThomCert", issuer="ThomCert"):
+def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca=False, pathlen=4, subject="ThomCert", issuer="ThomCert", client_auth=False):
     filename = filename.lower()
     set_up_algorithm(pk_algorithm, type)
 
@@ -331,10 +334,10 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
     #       signatureValue       BIT STRING  }
 
     encoder.enter(asn1.Numbers.Sequence)  # Certificate
-    write_tbs_certificate(encoder, pk_algorithm, sig_algorithm, pk, is_ca=ca, pathlen=pathlen, subject=subject, issuer=issuer)
+    write_tbs_certificate(encoder, pk_algorithm, sig_algorithm, pk, is_ca=ca, pathlen=pathlen, subject=subject, issuer=issuer, client_auth=client_auth)
     # Write signature algorithm
     write_signature_algorithm(encoder, sig_algorithm)
-    write_signature(encoder, pk_algorithm, sig_algorithm, pk, signing_key, is_ca=ca, pathlen=pathlen, subject=subject, issuer=issuer)
+    write_signature(encoder, pk_algorithm, sig_algorithm, pk, signing_key, is_ca=ca, pathlen=pathlen, subject=subject, issuer=issuer, client_auth=client_auth)
 
     encoder.leave()  # Leave Certificate SEQUENCE
 
@@ -410,6 +413,17 @@ if __name__ == "__main__":
         issuer="ThomCert Int CA",
         subject="",
     )
+    generate(
+        leaf_sign_algorithm,
+        intermediate_sign_algorithm,
+        "client",
+        "../signing-int.key.bin",
+        type="sign",
+        ca=False,
+        issuer="ThomCert Int CA",
+        subject="client",
+        client_auth=True,
+    )
 
     with open("signing.chain.crt", "wb") as f:
         with open("signing.crt", "rb") as r:
@@ -449,6 +463,17 @@ if __name__ == "__main__":
         "../kem-int.key.bin",
         type="kem",
         issuer="ThomCert Int CA",
+    )
+
+    generate(
+        kex_alg,
+        intermediate_sign_algorithm,
+        "kem-client",
+        "../kem-int.key.bin",
+        type="kem",
+        issuer="ThomCert Int CA",
+        subject="client",
+        client_auth=True,
     )
 
     with open(f"{kex_alg}.chain.crt", "wb") as file_:
