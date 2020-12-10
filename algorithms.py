@@ -3,10 +3,16 @@ import itertools
 
 signs = [
     ("dilithium2", "Dilithium2"),
+    ("dilithium3", "Dilithium3"),
+    ("falcon512", "Falcon512"),
+    ("sphincssha256128frobust", "SphincsSha256128fRobust"),
+    ("sphincssha256128fsimple", "SphincsSha256128fSimple"),
 ]
 
 kems = [
     ("kyber512", "Kyber512"),
+    ("lightsaber", "Lightsaber"),
+    ("SidhP434", "SidhP434"),
 ]
 
 
