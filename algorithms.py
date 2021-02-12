@@ -4,14 +4,51 @@ import itertools
 signs = [
     ("dilithium2", "Dilithium2"),
     ("dilithium3", "Dilithium3"),
+    ("dilithium5", "Dilithium5"),
     ("falcon512", "Falcon512"),
-    ("sphincssha256128frobust", "SphincsSha256128fRobust"),
-    ("sphincssha256128fsimple", "SphincsSha256128fSimple"),
+    ("falcon1024", "Falcon1024"),
+    ("rainbowiclassic", "RainbowIClassic"),
+    ("rainbowicircumzenithal", "RainbowICircumzenithal"),
+    ("rainbowicompressed", "RainbowICompressed"),
+    ("rainbowiiiclassic", "RainbowIiiClassic"),
+    ("rainbowiiicircumzenithal", "RainbowIiiCircumzenithal"),
+    ("rainbowiiicompressed", "RainbowIiiCompressed"),
+    ("rainbowvclassic", "RainbowVClassic"),
+    ("rainbowvcircumzenithal", "RainbowVCircumzenithal"),
+    ("rainbowvcompressed", "RainbowVCompressed"),
+    *[(sphincs.lower(), sphincs) for sphincs in (
+        f"Sphincs{hash}{size}{fs}{kind}"
+        for hash in ("Haraka", "Sha256", "Shake256")
+        for size in ("128", "192", "256")
+        for fs in ("f", "s")
+        for kind in ("Simple", "Robust")
+    )],
 ]
 
 kems = [
     ("kyber512", "Kyber512"),
+    ("kyber768", "Kyber768"),
+    ("kyber1024", "Kyber1024"),
+    *[
+        (f"mceliece{size}", f"ClassicMcEliece{size}")
+        for size in (
+            "348864",
+            "348864f",
+            "460896",
+            "460896f",
+            "6688128",
+            "6688128f",
+            "6960119",
+            "6960119f",
+            "8192128",
+            "8192128f",
+        )
+    ],
     ("lightsaber", "Lightsaber"),
+    ("saber", "Saber"),
+    ("firesaber", "Firesaber"),
+    ("ntruhps2048509", "NtruHps2048509"),
+    ("saber", "Saber"),
     ("SidhP434", "SidhP434"),
 ]
 
