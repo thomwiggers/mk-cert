@@ -48,7 +48,6 @@ kems = [
     ("saber", "Saber"),
     ("firesaber", "Firesaber"),
     ("ntruhps2048509", "NtruHps2048509"),
-    ("saber", "Saber"),
     ("SidhP434", "SidhP434"),
 ]
 
