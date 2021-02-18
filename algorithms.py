@@ -23,6 +23,7 @@ signs = [
         for fs in ("f", "s")
         for kind in ("Simple", "Robust")
     )],
+    ("xmss", "XMSS"),
 ]
 
 kems = [
@@ -48,7 +49,27 @@ kems = [
     ("saber", "Saber"),
     ("firesaber", "Firesaber"),
     ("ntruhps2048509", "NtruHps2048509"),
-    ("SidhP434", "SidhP434"),
+    ("ntruhps2048677", "NtruHps2048677"),
+    ("ntruhps4096821", "NtruHps4096821"),
+    ("ntruhrss701", "NtruHrss701"),
+    ("ntrulpr653", "NtruPrimeNtrulpr653"),
+    ("ntrulpr761", "NtruPrimeNtrulpr761"),
+    ("ntrulpr857", "NtruPrimeNtrulpr857"),
+    ("sntrup653",  "NtruPrimeSntrup653"),
+    ("sntrup761",  "NtruPrimeSntrup761"),
+    ("sntrup857",  "NtruPrimeSntrup857"),
+    *[
+        (f"frodokem{size}{alg}", f"FrodoKem{size.title()}{alg.title()}")
+        for size in ("640", "976", "1344")
+        for alg in ("aes", "shake")
+    ],
+    *[
+        (f"sikep{size}{compressed}", f"SikeP{size}{compressed.title()}")
+        for size in ("434", "503", "610", "751")
+        for compressed in ("", "compressed")
+    ],
+    ("bikel1fo", "BikeL1Fo"),
+    ("bikel3fo", "BikeL3Fo"),
 ]
 
 

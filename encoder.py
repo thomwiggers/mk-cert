@@ -22,7 +22,7 @@ if 'RUST_MIN_STACK' not in subenv:
 
 resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
-from algorithms import kems,  signs, get_oid, get_oqs_id
+from algorithms import kems, signs, get_oid, get_oqs_id
 
 
 def public_key_der(algorithm, pk):
