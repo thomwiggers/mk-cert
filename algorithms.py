@@ -83,3 +83,7 @@ def get_oid(algorithm):
 
 def get_oqs_id(algorithm):
     return dict(signs + kems)[algorithm]
+
+
+def is_sigalg(algorithm: str) -> bool:
+    return algorithm.lower() in dict(signs).keys()

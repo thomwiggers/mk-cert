@@ -22,7 +22,7 @@ if 'RUST_MIN_STACK' not in subenv:
 
 resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
-from algorithms import kems, signs, get_oid, get_oqs_id
+from algorithms import kems, signs, get_oid, get_oqs_id, is_sigalg
 
 
 def public_key_der(algorithm, pk):
@@ -97,7 +97,7 @@ def set_up_kem_algorithm(algorithm):
 
 
 def run_signutil(example, alg, *args):
-    if alg == "XMSS":
+    if alg.lower() == "xmss":
         cwd = "xmss-rs"
     else:
         cwd = "signutil"
@@ -107,7 +107,7 @@ def run_signutil(example, alg, *args):
         [*"cargo run --release --example".split(), example, *args],
         cwd=cwd,
         check=True,
-        capture_output=True,
+        capture_output=False,
         env=subenv,
     )
 
@@ -119,7 +119,7 @@ def get_keys(type, algorithm):
         return get_sig_keys(algorithm)
 
 
-def get_kem_keys(algorithm):
+def get_kem_keys(_):
     subprocess.run(
         ["cargo", "run", "--release"],
         cwd="kemutil",
@@ -136,7 +136,7 @@ def get_kem_keys(algorithm):
 
 def get_sig_keys(alg):
     run_signutil("keygen", alg)
-    if alg == "XMSS":
+    if alg.lower() == "xmss":
         with open("xmss-rs/publickey.bin", "rb") as f:
             pk = f.read()
         with open("xmss-rs/secretkey.bin", "rb") as f:
@@ -366,118 +366,119 @@ def get_classic_certs():
 
 
 if __name__ == "__main__":
-    root_sign_algorithm = os.environ.get("ROOT_SIGALG", "dilithium2")
-    intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "dilithium2")
-    leaf_sign_algorithm = os.environ.get("LEAF_SIGALG", "dilithium2")
-    kex_alg = os.environ.get("KEX_ALG", "kyber512")
-    if kex_alg == "X25519":
+    root_sign_algorithm = os.environ.get("ROOT_SIGALG", "dilithium2").lower()
+    intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "dilithium2").lower()
+    leaf_sign_algorithm = os.environ.get("LEAF_SIGALG", "dilithium2").lower()
+    kex_alg = os.environ.get("KEX_ALG", "kyber512").lower()
+    if kex_alg == "x25519":
         get_classic_certs()
         print("not doing anything for x25519")
         sys.exit(0)
 
-    assert kex_alg in dict(kems).keys()
-    assert intermediate_sign_algorithm in dict(signs).keys()
-    assert root_sign_algorithm in dict(signs).keys()
+    assert kex_alg in dict(kems).keys(), kex_alg
+    assert is_sigalg(intermediate_sign_algorithm), intermediate_sign_algorithm
+    assert is_sigalg(root_sign_algorithm), root_sign_algorithm
 
     print(f"Hostnames: {HOSTNAMES}")
 
     print(f"Generating keys for {leaf_sign_algorithm} signed by {intermediate_sign_algorithm} signed by {root_sign_algorithm}")
-    generate(
-        root_sign_algorithm,
-        root_sign_algorithm,
-        "signing-ca",
-        "../signing-ca.key.bin",
-        type="sign",
-        ca=True,
-        subject="ThomCert CA",
-        issuer="ThomCert CA",
-    )
-    generate(
-        intermediate_sign_algorithm,
-        root_sign_algorithm,
-        "signing-int",
-        "../signing-ca.key.bin",
-        type="sign",
-        ca=True,
-        pathlen=1,
-        subject="ThomCert Int CA",
-        issuer="ThomCert CA",
-    )
-    generate(
-        leaf_sign_algorithm,
-        intermediate_sign_algorithm,
-        "signing",
-        "../signing-int.key.bin",
-        type="sign",
-        ca=False,
-        issuer="ThomCert Int CA",
-        subject="",
-    )
-    generate(
-        leaf_sign_algorithm,
-        intermediate_sign_algorithm,
-        "client",
-        "../signing-int.key.bin",
-        type="sign",
-        ca=False,
-        issuer="ThomCert Int CA",
-        subject="client",
-        client_auth=True,
-    )
+    if is_sigalg(leaf_sign_algorithm):
+        generate(
+            root_sign_algorithm,
+            root_sign_algorithm,
+            "signing-ca",
+            "../signing-ca.key.bin",
+            type="sign",
+            ca=True,
+            subject="ThomCert CA",
+            issuer="ThomCert CA",
+        )
+        generate(
+            intermediate_sign_algorithm,
+            root_sign_algorithm,
+            "signing-int",
+            "../signing-ca.key.bin",
+            type="sign",
+            ca=True,
+            pathlen=1,
+            subject="ThomCert Int CA",
+            issuer="ThomCert CA",
+        )
+        generate(
+            leaf_sign_algorithm,
+            intermediate_sign_algorithm,
+            "signing",
+            "../signing-int.key.bin",
+            type="sign",
+            ca=False,
+            issuer="ThomCert Int CA",
+            subject="",
+        )
+        generate(
+            leaf_sign_algorithm,
+            intermediate_sign_algorithm,
+            "client",
+            "../signing-int.key.bin",
+            type="sign",
+            ca=False,
+            issuer="ThomCert Int CA",
+            subject="client",
+            client_auth=True,
+        )
 
-    with open("signing.chain.crt", "wb") as f:
-        with open("signing.crt", "rb") as r:
-            f.write(r.read())
-        with open("signing-int.crt", "rb") as r:
-            f.write(r.read())
+        with open("signing.chain.crt", "wb") as f:
+            with open("signing.crt", "rb") as r:
+                f.write(r.read())
+            with open("signing-int.crt", "rb") as r:
+                f.write(r.read())
+    else:
+        print("KEM Certificate time")
 
-    print("KEM Certificate time")
+        # KEM certs
+        generate(
+            root_sign_algorithm,
+            root_sign_algorithm,
+            "kem-ca",
+            "../kem-ca.key.bin",
+            type="sign",
+            ca=True,
+            issuer="ThomCert CA",
+            subject="ThomCert CA"
+        )
+        generate(
+            intermediate_sign_algorithm,
+            root_sign_algorithm,
+            "kem-int",
+            "../kem-ca.key.bin",
+            type="sign",
+            ca=True,
+            pathlen=1,
+            issuer="ThomCert CA",
+            subject="ThomCert Int CA"
+        )
+        print(f"Generating KEM cert for {kex_alg}")
+        generate(
+            kex_alg,
+            intermediate_sign_algorithm,
+            f"kem",
+            "../kem-int.key.bin",
+            type="kem",
+            issuer="ThomCert Int CA",
+        )
 
-    # KEM certs
-    generate(
-        root_sign_algorithm,
-        root_sign_algorithm,
-        "kem-ca",
-        "../kem-ca.key.bin",
-        type="sign",
-        ca=True,
-        issuer="ThomCert CA",
-        subject="ThomCert CA"
-    )
-    generate(
-        intermediate_sign_algorithm,
-        root_sign_algorithm,
-        "kem-int",
-        "../kem-ca.key.bin",
-        type="sign",
-        ca=True,
-        pathlen=1,
-        issuer="ThomCert CA",
-        subject="ThomCert Int CA"
-    )
-    print(f"Generating KEM cert for {kex_alg}")
-    generate(
-        kex_alg,
-        intermediate_sign_algorithm,
-        f"{kex_alg}",
-        "../kem-int.key.bin",
-        type="kem",
-        issuer="ThomCert Int CA",
-    )
+        generate(
+            kex_alg,
+            intermediate_sign_algorithm,
+            "kem-client",
+            "../kem-int.key.bin",
+            type="kem",
+            issuer="ThomCert Int CA",
+            subject="client",
+            client_auth=True,
+        )
 
-    generate(
-        kex_alg,
-        intermediate_sign_algorithm,
-        "kem-client",
-        "../kem-int.key.bin",
-        type="kem",
-        issuer="ThomCert Int CA",
-        subject="client",
-        client_auth=True,
-    )
-
-    with open(f"{kex_alg}.chain.crt", "wb") as file_:
-        with open(f"{kex_alg}.crt", "rb") as r:
-            file_.write(r.read())
-        with open("kem-int.crt", "rb") as r:
-            file_.write(r.read())
+        with open(f"kem.chain.crt", "wb") as file_:
+            with open(f"kem.crt", "rb") as r:
+                file_.write(r.read())
+            with open("kem-int.crt", "rb") as r:
+                file_.write(r.read())
