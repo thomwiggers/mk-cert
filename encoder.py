@@ -431,6 +431,13 @@ if __name__ == "__main__":
                 f.write(r.read())
             with open("signing-int.crt", "rb") as r:
                 f.write(r.read())
+        with open("signing.all.crt", "wb") as f:
+            with open("signing.crt", "rb") as r:
+                f.write(r.read())
+            with open("signing-int.crt", "rb") as r:
+                f.write(r.read())
+            with open("signing-ca.crt", "rb") as r:
+                f.write(r.read())
     else:
         print("KEM Certificate time")
 
