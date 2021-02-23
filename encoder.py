@@ -368,21 +368,22 @@ def get_classic_certs():
 if __name__ == "__main__":
     root_sign_algorithm = os.environ.get("ROOT_SIGALG", "dilithium2").lower()
     intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "dilithium2").lower()
-    leaf_sign_algorithm = os.environ.get("LEAF_SIGALG", "dilithium2").lower()
-    kex_alg = os.environ.get("KEX_ALG", "kyber512").lower()
-    if kex_alg == "x25519":
+    leaf_auth_algorithm = os.environ.get("LEAF_ALG", "dilithium2").lower()
+    client_alg = os.environ.get("CLIENT_ALG", leaf_auth_algorithm).lower()
+    client_sigalg = os.environ.get("CLIENT_CA_ALG", intermediate_sign_algorithm).lower()
+    if leaf_auth_algorithm == "x25519" or root_sign_algorithm == "rsa2048":
         get_classic_certs()
         print("not doing anything for x25519")
         sys.exit(0)
 
-    assert kex_alg in dict(kems).keys(), kex_alg
     assert is_sigalg(intermediate_sign_algorithm), intermediate_sign_algorithm
     assert is_sigalg(root_sign_algorithm), root_sign_algorithm
+    assert is_sigalg(client_sigalg), client_sigalg
 
     print(f"Hostnames: {HOSTNAMES}")
 
-    print(f"Generating keys for {leaf_sign_algorithm} signed by {intermediate_sign_algorithm} signed by {root_sign_algorithm}")
-    if is_sigalg(leaf_sign_algorithm):
+    print(f"Generating keys for {leaf_auth_algorithm} signed by {intermediate_sign_algorithm} signed by {root_sign_algorithm}")
+    if is_sigalg(leaf_auth_algorithm):
         generate(
             root_sign_algorithm,
             root_sign_algorithm,
@@ -405,7 +406,7 @@ if __name__ == "__main__":
             issuer="ThomCert CA",
         )
         generate(
-            leaf_sign_algorithm,
+            leaf_auth_algorithm,
             intermediate_sign_algorithm,
             "signing",
             "../signing-int.key.bin",
@@ -413,17 +414,6 @@ if __name__ == "__main__":
             ca=False,
             issuer="ThomCert Int CA",
             subject="",
-        )
-        generate(
-            leaf_sign_algorithm,
-            intermediate_sign_algorithm,
-            "client",
-            "../signing-int.key.bin",
-            type="sign",
-            ca=False,
-            issuer="ThomCert Int CA",
-            subject="client",
-            client_auth=True,
         )
 
         with open("signing.chain.crt", "wb") as f:
@@ -463,9 +453,9 @@ if __name__ == "__main__":
             issuer="ThomCert CA",
             subject="ThomCert Int CA"
         )
-        print(f"Generating KEM cert for {kex_alg}")
+        print(f"Generating KEM cert for {leaf_auth_algorithm}")
         generate(
-            kex_alg,
+            leaf_auth_algorithm,
             intermediate_sign_algorithm,
             f"kem",
             "../kem-int.key.bin",
@@ -473,19 +463,30 @@ if __name__ == "__main__":
             issuer="ThomCert Int CA",
         )
 
-        generate(
-            kex_alg,
-            intermediate_sign_algorithm,
-            "kem-client",
-            "../kem-int.key.bin",
-            type="kem",
-            issuer="ThomCert Int CA",
-            subject="client",
-            client_auth=True,
-        )
-
         with open(f"kem.chain.crt", "wb") as file_:
             with open(f"kem.crt", "rb") as r:
                 file_.write(r.read())
             with open("kem-int.crt", "rb") as r:
                 file_.write(r.read())
+
+    generate(
+        client_sigalg,
+        client_sigalg,
+        "client-ca",
+        "../client-ca.key.bin",
+        type="sign",
+        ca=True,
+        subject="ThomCert Client CA",
+        issuer="ThomCert Client CA",
+    )
+    generate(
+        client_alg,
+        client_sigalg,
+        "client",
+        "../client-ca.key.bin",
+        type=("sign" if is_sigalg(client_alg) else "kem"),
+        ca=False,
+        issuer="ThomCert Client CA",
+        subject="client",
+        client_auth=True,
+    )
