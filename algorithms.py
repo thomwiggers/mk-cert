@@ -70,6 +70,7 @@ kems = [
     ],
     ("bikel1fo", "BikeL1Fo"),
     ("bikel3fo", "BikeL3Fo"),
+    *[(f"hqc{size}", f"Hqc{size}") for size in ["128", "192", "256"]],
 ]
 
 
