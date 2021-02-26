@@ -12,15 +12,19 @@ import shutil
 
 DEBUG = False
 
-HOSTNAMES = list(map(lambda x: x.encode(), os.environ.get('HOSTNAMES', 'servername').split(",")))
+HOSTNAMES = list(
+    map(lambda x: x.encode(), os.environ.get("HOSTNAMES", "servername").split(","))
+)
 
 subenv = os.environ.copy()
-if 'RUST_MIN_STACK' not in subenv:
+if "RUST_MIN_STACK" not in subenv:
     subenv["RUSTFLAGS"] = "-C target-cpu=native"
-    subenv["RUST_MIN_STACK"] = str(20*1024*1024)
+    subenv["RUST_MIN_STACK"] = str(20 * 1024 * 1024)
 
 
-resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+resource.setrlimit(
+    resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY)
+)
 
 from algorithms import kems, signs, get_oid, get_oqs_id, is_sigalg
 
@@ -164,10 +168,31 @@ def write_public_key(encoder, algorithm, pk):
     encoder.leave()
 
 
-def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, pathlen, subject, issuer, client_auth):
+def write_signature(
+    encoder,
+    algorithm,
+    sign_algorithm,
+    pk,
+    signing_key,
+    is_ca,
+    pathlen,
+    subject,
+    issuer,
+    client_auth,
+):
     tbsencoder = asn1.Encoder()
     tbsencoder.start()
-    write_tbs_certificate(tbsencoder, algorithm, sign_algorithm, pk, is_ca=is_ca, pathlen=pathlen, subject=subject, issuer=issuer, client_auth=client_auth)
+    write_tbs_certificate(
+        tbsencoder,
+        algorithm,
+        sign_algorithm,
+        pk,
+        is_ca=is_ca,
+        pathlen=pathlen,
+        subject=subject,
+        issuer=issuer,
+        client_auth=client_auth,
+    )
     tbscertificate_bytes = tbsencoder.output()
     tbscertbytes_file = f"tbscertbytes_for{algorithm}_by_{signing_key[3:].lower()}.bin"
     tbssig_file = f"tbs_sig_for-{algorithm}-by-{signing_key[3:].lower()}.bin"
@@ -177,7 +202,13 @@ def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, 
     # Sign tbscertificate_bytes
     if DEBUG:
         time.sleep(2)
-    run_signutil("signer", sign_algorithm, signing_key.lower(), f"../{tbscertbytes_file}", f"../{tbssig_file}")
+    run_signutil(
+        "signer",
+        sign_algorithm,
+        signing_key.lower(),
+        f"../{tbscertbytes_file}",
+        f"../{tbssig_file}",
+    )
 
     # Obtain signature
     with open(tbssig_file, "rb") as f:
@@ -190,11 +221,21 @@ def write_signature(encoder, algorithm, sign_algorithm, pk, signing_key, is_ca, 
 def write_signature_algorithm(encoder, algorithm):
     encoder.enter(asn1.Numbers.Sequence)  # enter algorithmidentifier
     encoder.write(get_oid(algorithm), asn1.Numbers.ObjectIdentifier)
-    #encoder.write(None)  # Parameters
+    # encoder.write(None)  # Parameters
     encoder.leave()  # Leave AlgorithmIdentifier
 
 
-def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, pathlen=4, subject="ThomCert", issuer="ThomCert", client_auth=False):
+def write_tbs_certificate(
+    encoder,
+    algorithm,
+    sign_algorithm,
+    pk,
+    is_ca=False,
+    pathlen=4,
+    subject="ThomCert",
+    issuer="ThomCert",
+    client_auth=False,
+):
     #  TBSCertificate  ::=  SEQUENCE  {
     #      version         [0]  EXPLICIT Version DEFAULT v1,
     #      serialNumber         CertificateSerialNumber,
@@ -283,9 +324,13 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
         extvalue.start()
         extvalue.enter(asn1.Numbers.Sequence)  # Key Usages
         if client_auth:
-            extvalue.write("1.3.6.1.5.5.7.3.2", asn1.Numbers.ObjectIdentifier)  # clientAuth
+            extvalue.write(
+                "1.3.6.1.5.5.7.3.2", asn1.Numbers.ObjectIdentifier
+            )  # clientAuth
         else:
-            extvalue.write("1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier)  # serverAuth
+            extvalue.write(
+                "1.3.6.1.5.5.7.3.1", asn1.Numbers.ObjectIdentifier
+            )  # serverAuth
         extvalue.leave()  # Key Usages
         encoder.write(extvalue.output(), asn1.Numbers.OctetString)
         encoder.leave()  # Extension 2
@@ -310,7 +355,18 @@ def write_tbs_certificate(encoder, algorithm, sign_algorithm, pk, is_ca=False, p
     encoder.leave()  # Leave TBSCertificate SEQUENCE
 
 
-def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca=False, pathlen=4, subject="ThomCert", issuer="ThomCert", client_auth=False):
+def generate(
+    pk_algorithm,
+    sig_algorithm,
+    filename,
+    signing_key,
+    type="sign",
+    ca=False,
+    pathlen=4,
+    subject="ThomCert",
+    issuer="ThomCert",
+    client_auth=False,
+):
     filename = filename.lower()
     set_up_algorithm(pk_algorithm, type)
 
@@ -334,10 +390,31 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
     #       signatureValue       BIT STRING  }
 
     encoder.enter(asn1.Numbers.Sequence)  # Certificate
-    write_tbs_certificate(encoder, pk_algorithm, sig_algorithm, pk, is_ca=ca, pathlen=pathlen, subject=subject, issuer=issuer, client_auth=client_auth)
+    write_tbs_certificate(
+        encoder,
+        pk_algorithm,
+        sig_algorithm,
+        pk,
+        is_ca=ca,
+        pathlen=pathlen,
+        subject=subject,
+        issuer=issuer,
+        client_auth=client_auth,
+    )
     # Write signature algorithm
     write_signature_algorithm(encoder, sig_algorithm)
-    write_signature(encoder, pk_algorithm, sig_algorithm, pk, signing_key, is_ca=ca, pathlen=pathlen, subject=subject, issuer=issuer, client_auth=client_auth)
+    write_signature(
+        encoder,
+        pk_algorithm,
+        sig_algorithm,
+        pk,
+        signing_key,
+        is_ca=ca,
+        pathlen=pathlen,
+        subject=subject,
+        issuer=issuer,
+        client_auth=client_auth,
+    )
 
     encoder.leave()  # Leave Certificate SEQUENCE
 
@@ -346,18 +423,20 @@ def generate(pk_algorithm, sig_algorithm, filename, signing_key, type="sign", ca
     write_pem(f"{filename}.crt", b"CERTIFICATE", encoder.output())
 
 
-
 def get_classic_certs():
-    shutil.copyfile('rsas-int/x25519/x25519.pub', 'kem.pub')
-    shutil.copyfile('rsas-int/x25519/x25519.crt', 'kem.crt')
-    shutil.copyfile('rsas-int/x25519/x25519.chain.crt', 'kem.chain.crt')
-    shutil.copyfile('rsas-int/x25519/x25519.key', 'kem.key')
-    shutil.copyfile('rsas-int/pki/ca.crt', 'signing-int.crt')
-    shutil.copyfile('rsas-int/pki/ca.crt', 'kem-int.crt')
-    shutil.copyfile('rsas-root/pki/ca.crt', 'signing-ca.crt')
-    shutil.copyfile('rsas-root/pki/ca.crt', 'kem-ca.crt')
-    shutil.copyfile('rsas-int/pki/issued/servername.crt', 'signing.crt')
-    shutil.copyfile('rsas-int/pki/private/servername.key', 'signing.key')
+    shutil.copyfile("rsas-int/x25519/x25519.pub", "kem.pub")
+    shutil.copyfile("rsas-int/x25519/x25519.crt", "kem.crt")
+    shutil.copyfile("rsas-int/x25519/x25519.chain.crt", "kem.chain.crt")
+    shutil.copyfile("rsas-int/x25519/x25519.key", "kem.key")
+    shutil.copyfile("rsas-int/pki/ca.crt", "signing-int.crt")
+    shutil.copyfile("rsas-int/pki/ca.crt", "kem-int.crt")
+    shutil.copyfile("rsas-root/pki/ca.crt", "signing-ca.crt")
+    shutil.copyfile("rsas-root/pki/ca.crt", "kem-ca.crt")
+    shutil.copyfile("rsas-int/pki/issued/servername.crt", "signing.crt")
+    shutil.copyfile("rsas-int/pki/private/servername.key", "signing.key")
+    shutil.copyfile("rsas-root/pki/ca.crt", "client-ca.crt")
+    shutil.copyfile("rsas-int/pki/private/client.key", "client.key")
+    shutil.copyfile("rsas-int/pki/issued/client.crt", "client.crt")
     with open("signing.chain.crt", "wb") as f:
         with open("signing.crt", "rb") as r:
             f.write(r.read())
@@ -369,8 +448,8 @@ if __name__ == "__main__":
     root_sign_algorithm = os.environ.get("ROOT_SIGALG", "dilithium2").lower()
     intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "dilithium2").lower()
     leaf_auth_algorithm = os.environ.get("LEAF_ALG", "dilithium2").lower()
-    client_alg = os.environ.get("CLIENT_ALG", leaf_auth_algorithm).lower()
-    client_sigalg = os.environ.get("CLIENT_CA_ALG", intermediate_sign_algorithm).lower()
+    client_alg = os.environ.get("CLIENT_ALG", None)
+    client_sigalg = os.environ.get("CLIENT_CA_ALG", None)
     if leaf_auth_algorithm == "x25519" or root_sign_algorithm == "rsa2048":
         get_classic_certs()
         print("not doing anything for x25519")
@@ -378,11 +457,12 @@ if __name__ == "__main__":
 
     assert is_sigalg(intermediate_sign_algorithm), intermediate_sign_algorithm
     assert is_sigalg(root_sign_algorithm), root_sign_algorithm
-    assert is_sigalg(client_sigalg), client_sigalg
 
     print(f"Hostnames: {HOSTNAMES}")
 
-    print(f"Generating keys for {leaf_auth_algorithm} signed by {intermediate_sign_algorithm} signed by {root_sign_algorithm}")
+    print(
+        f"Generating keys for {leaf_auth_algorithm} signed by {intermediate_sign_algorithm} signed by {root_sign_algorithm}"
+    )
     if is_sigalg(leaf_auth_algorithm):
         generate(
             root_sign_algorithm,
@@ -440,7 +520,7 @@ if __name__ == "__main__":
             type="sign",
             ca=True,
             issuer="ThomCert CA",
-            subject="ThomCert CA"
+            subject="ThomCert CA",
         )
         generate(
             intermediate_sign_algorithm,
@@ -451,7 +531,7 @@ if __name__ == "__main__":
             ca=True,
             pathlen=1,
             issuer="ThomCert CA",
-            subject="ThomCert Int CA"
+            subject="ThomCert Int CA",
         )
         print(f"Generating KEM cert for {leaf_auth_algorithm}")
         generate(
@@ -469,24 +549,29 @@ if __name__ == "__main__":
             with open("kem-int.crt", "rb") as r:
                 file_.write(r.read())
 
-    generate(
-        client_sigalg,
-        client_sigalg,
-        "client-ca",
-        "../client-ca.key.bin",
-        type="sign",
-        ca=True,
-        subject="ThomCert Client CA",
-        issuer="ThomCert Client CA",
-    )
-    generate(
-        client_alg,
-        client_sigalg,
-        "client",
-        "../client-ca.key.bin",
-        type=("sign" if is_sigalg(client_alg) else "kem"),
-        ca=False,
-        issuer="ThomCert Client CA",
-        subject="client",
-        client_auth=True,
-    )
+    if client_alg:
+        client_alg = client_alg.lower()
+        client_sigalg = client_sigalg.lower()
+        assert is_sigalg(client_sigalg), client_sigalg
+
+        generate(
+            client_sigalg,
+            client_sigalg,
+            "client-ca",
+            "../client-ca.key.bin",
+            type="sign",
+            ca=True,
+            subject="ThomCert Client CA",
+            issuer="ThomCert Client CA",
+        )
+        generate(
+            client_alg,
+            client_sigalg,
+            "client",
+            "../client-ca.key.bin",
+            type=("sign" if is_sigalg(client_alg) else "kem"),
+            ca=False,
+            issuer="ThomCert Client CA",
+            subject="client",
+            client_auth=True,
+        )

@@ -1,6 +1,10 @@
 """The algorithms in use"""
 import itertools
 
+
+# for legacy reasons, these are tuples,
+# but both sides should be equal up to case.
+
 signs = [
     ("dilithium2", "Dilithium2"),
     ("dilithium3", "Dilithium3"),
@@ -31,7 +35,7 @@ kems = [
     ("kyber768", "Kyber768"),
     ("kyber1024", "Kyber1024"),
     *[
-        (f"mceliece{size}", f"ClassicMcEliece{size}")
+        (f"classicmceliece{size}", f"ClassicMcEliece{size}")
         for size in (
             "348864",
             "348864f",
@@ -52,12 +56,12 @@ kems = [
     ("ntruhps2048677", "NtruHps2048677"),
     ("ntruhps4096821", "NtruHps4096821"),
     ("ntruhrss701", "NtruHrss701"),
-    ("ntrulpr653", "NtruPrimeNtrulpr653"),
-    ("ntrulpr761", "NtruPrimeNtrulpr761"),
-    ("ntrulpr857", "NtruPrimeNtrulpr857"),
-    ("sntrup653",  "NtruPrimeSntrup653"),
-    ("sntrup761",  "NtruPrimeSntrup761"),
-    ("sntrup857",  "NtruPrimeSntrup857"),
+    ("ntruprimentrulpr653", "NtruPrimeNtrulpr653"),
+    ("ntruprimentrulpr761", "NtruPrimeNtrulpr761"),
+    ("ntruprimentrulpr857", "NtruPrimeNtrulpr857"),
+    ("ntruprimesntrup653",  "NtruPrimeSntrup653"),
+    ("ntruprimesntrup761",  "NtruPrimeSntrup761"),
+    ("ntruprimesntrup857",  "NtruPrimeSntrup857"),
     *[
         (f"frodokem{size}{alg}", f"FrodoKem{size.title()}{alg.title()}")
         for size in ("640", "976", "1344")
