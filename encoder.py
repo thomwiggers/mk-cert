@@ -442,6 +442,11 @@ def get_classic_certs():
             f.write(r.read())
         with open("signing-int.crt", "rb") as r:
             f.write(r.read())
+    with open("signing.all.crt", "wb") as f:
+        with open("signing.chain.crt", "rb") as r:
+            f.write(r.read())
+        with open("signing-ca.crt", "rb") as r:
+            f.write(r.read())
 
 
 if __name__ == "__main__":
