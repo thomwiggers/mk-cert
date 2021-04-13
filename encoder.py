@@ -434,7 +434,7 @@ def get_classic_certs():
     shutil.copyfile("rsas-root/pki/ca.crt", "kem-ca.crt")
     shutil.copyfile("rsas-int/pki/issued/servername.crt", "signing.crt")
     shutil.copyfile("rsas-int/pki/private/servername.key", "signing.key")
-    shutil.copyfile("rsas-root/pki/ca.crt", "client-ca.crt")
+    shutil.copyfile("rsas-int/pki/ca.crt", "client-ca.crt")
     shutil.copyfile("rsas-int/pki/private/client.key", "client.key")
     shutil.copyfile("rsas-int/pki/issued/client.crt", "client.crt")
     with open("signing.chain.crt", "wb") as f:
