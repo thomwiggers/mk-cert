@@ -462,6 +462,7 @@ if __name__ == "__main__":
 
     assert is_sigalg(intermediate_sign_algorithm), intermediate_sign_algorithm
     assert is_sigalg(root_sign_algorithm), root_sign_algorithm
+    assert client_sigalg is None or client_alg is not None
 
     print(f"Hostnames: {HOSTNAMES}")
 
@@ -555,6 +556,7 @@ if __name__ == "__main__":
                 file_.write(r.read())
 
     if client_alg:
+        print("Generating client cert")
         client_alg = client_alg.lower()
         client_sigalg = client_sigalg.lower()
         assert is_sigalg(client_sigalg), client_sigalg
@@ -580,3 +582,6 @@ if __name__ == "__main__":
             subject="client",
             client_auth=True,
         )
+    else:
+        print("No client auth necessary")
+        print("client_alg:", client_alg)
