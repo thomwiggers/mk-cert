@@ -455,7 +455,7 @@ if __name__ == "__main__":
     leaf_auth_algorithm = os.environ.get("LEAF_ALG", "dilithium2").lower()
     client_alg = os.environ.get("CLIENT_ALG", None)
     client_sigalg = os.environ.get("CLIENT_CA_ALG", None)
-    if leaf_auth_algorithm == "x25519" or root_sign_algorithm == "rsa2048":
+    if leaf_auth_algorithm in ("x25519", "rsa2048"):
         get_classic_certs()
         print("not doing anything for x25519")
         sys.exit(0)
