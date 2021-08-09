@@ -77,8 +77,12 @@ kems = [
     *[(f"hqc{size}", f"Hqc{size}") for size in ["128", "192", "256"]],
 ]
 
+nikes = [
+    "csidh2047d221",
+]
 
-oids = {var: i for (i, (var, _)) in enumerate(itertools.chain(signs, kems), start=1)}
+
+oids = {var: i for (i, (var, _)) in enumerate(itertools.chain(signs, kems, zip(nikes, itertools.repeat(0))), start=1)}
 
 
 def get_oid(algorithm):
@@ -92,3 +96,6 @@ def get_oqs_id(algorithm):
 
 def is_sigalg(algorithm: str) -> bool:
     return algorithm.lower() in dict(signs).keys()
+
+def is_kem(algorithm: str) -> bool:
+    return algorithm.lower() in dict(kems).keys()

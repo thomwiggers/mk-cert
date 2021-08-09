@@ -2,6 +2,7 @@ import asn1
 from datetime import datetime, timedelta
 import subprocess
 import base64
+import textwrap
 from io import BytesIO
 import sys
 import os
@@ -26,7 +27,7 @@ resource.setrlimit(
     resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY)
 )
 
-from algorithms import kems, signs, get_oid, get_oqs_id, is_sigalg
+from algorithms import kems, signs, nikes, get_oid, get_oqs_id, is_sigalg, is_kem
 
 
 def public_key_der(algorithm, pk):
@@ -83,8 +84,10 @@ def der_to_pem(data, label=b"CERTIFICATE"):
 def set_up_algorithm(algorithm, type):
     if type == "kem":
         set_up_kem_algorithm(algorithm)
-    else:
+    elif type == "sign":
         set_up_sign_algorithm(algorithm)
+    else:
+        assert type == "nike", "should've been a nike because we set up those elsewhere"
 
 
 def set_up_sign_algorithm(algorithm):
@@ -121,6 +124,27 @@ def get_keys(type, algorithm):
         return get_kem_keys(algorithm)
     elif type == "sign":
         return get_sig_keys(algorithm)
+    elif type == "nike":
+        return get_csidh_keys(algorithm)
+
+
+def get_csidh_keys(alg):
+    with open("csidhutil/src/instance.rs", "w") as fh:
+        fh.write(textwrap.dedent(f"""
+        pub use secsidh::{alg} as csidh;
+        """))
+    subprocess.run(
+        ["cargo", "run", "--release"],
+        cwd="csidhutil",
+        check=True,
+        env=subenv,
+        capture_output=True
+    )
+    with open("csidhutil/publickey.bin", "rb") as f:
+        pk = f.read()
+    with open("csidhutil/secretkey.bin", "rb") as f:
+        sk = f.read()
+    return (pk, sk)
 
 
 def get_kem_keys(_):
@@ -516,13 +540,19 @@ if __name__ == "__main__":
                 f.write(r.read())
     else:
         print("KEM Certificate time")
+        if is_kem(leaf_auth_algorithm):
+            crt_base = "kem"
+            alg_type = "kem"
+        else:
+            crt_base = "csidh"
+            alg_type = "nike"
 
         # KEM certs
         generate(
             root_sign_algorithm,
             root_sign_algorithm,
-            "kem-ca",
-            "../kem-ca.key.bin",
+            f"{crt_base}-ca",
+            f"../{crt_base}-ca.key.bin",
             type="sign",
             ca=True,
             issuer="ThomCert CA",
@@ -531,28 +561,28 @@ if __name__ == "__main__":
         generate(
             intermediate_sign_algorithm,
             root_sign_algorithm,
-            "kem-int",
-            "../kem-ca.key.bin",
+            f"{crt_base}-int",
+            f"../{crt_base}-ca.key.bin",
             type="sign",
             ca=True,
             pathlen=1,
             issuer="ThomCert CA",
             subject="ThomCert Int CA",
         )
-        print(f"Generating KEM cert for {leaf_auth_algorithm}")
+        print(f"Generating {crt_base} cert for {leaf_auth_algorithm}")
         generate(
             leaf_auth_algorithm,
             intermediate_sign_algorithm,
-            f"kem",
-            "../kem-int.key.bin",
-            type="kem",
+            f"{crt_base}",
+            f"../{crt_base}-int.key.bin",
+            type=alg_type,
             issuer="ThomCert Int CA",
         )
 
-        with open(f"kem.chain.crt", "wb") as file_:
-            with open(f"kem.crt", "rb") as r:
+        with open(f"{crt_base}.chain.crt", "wb") as file_:
+            with open(f"{crt_base}.crt", "rb") as r:
                 file_.write(r.read())
-            with open("kem-int.crt", "rb") as r:
+            with open(f"{crt_base}-int.crt", "rb") as r:
                 file_.write(r.read())
 
     if client_alg:
@@ -576,7 +606,7 @@ if __name__ == "__main__":
             client_sigalg,
             "client",
             "../client-ca.key.bin",
-            type=("sign" if is_sigalg(client_alg) else "kem"),
+            type=("sign" if is_sigalg(client_alg) else "kem" if is_kem(client_alg) else "nike"),
             ca=False,
             issuer="ThomCert Client CA",
             subject="client",
