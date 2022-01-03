@@ -78,7 +78,18 @@ kems = [
 ]
 
 nikes = [
-    "csidh2047d221",
+    "csidh2047k221",
+    "csidh4095k256",
+    "csidh5119k234",
+    "csidh6143k256",
+    "csidh8191k332",
+    "csidh9215k384",
+    "ctidh2047k221",
+    "ctidh4095k256",
+    "ctidh5119k234",
+    "ctidh6143k256",
+    "ctidh8191k332",
+    "ctidh9215k384",
 ]
 
 
