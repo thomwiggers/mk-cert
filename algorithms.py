@@ -72,24 +72,24 @@ kems = [
         for size in ("434", "503", "610", "751")
         for compressed in ("", "compressed")
     ],
-    ("bikel1fo", "BikeL1Fo"),
-    ("bikel3fo", "BikeL3Fo"),
+    ("bikel1", "BikeL1"),
+    ("bikel3", "BikeL3"),
     *[(f"hqc{size}", f"Hqc{size}") for size in ["128", "192", "256"]],
 ]
 
 nikes = [
-    "csidh2047k221",
-    "csidh4095k256",
-    "csidh5119k234",
-    "csidh6143k256",
-    "csidh8191k332",
-    "csidh9215k384",
-    "ctidh2047k221",
-    "ctidh4095k256",
-    "ctidh5119k234",
-    "ctidh6143k256",
-    "ctidh8191k332",
-    "ctidh9215k384",
+    "CSIDH2047k221",
+    "CSIDH4095k256",
+    "CSIDH5119k234",
+    "CSIDH6143k256",
+    "CSIDH8191k332",
+    "CSIDH9215k384",
+    "CTIDH2047k221",
+    "CTIDH4095k256",
+    "CTIDH5119k234",
+    "CTIDH6143k256",
+    "CTIDH8191k332",
+    "CTIDH9215k384",
 ]
 
 
