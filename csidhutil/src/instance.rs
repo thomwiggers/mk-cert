@@ -1,1 +1,1 @@
-pub use secsidh::csidh2047d221 as csidh;
+pub use secsidh::csidh2047k221 as csidh;

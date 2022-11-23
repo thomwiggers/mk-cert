@@ -93,7 +93,7 @@ nikes = [
 ]
 
 
-oids = {var: i for (i, (var, _)) in enumerate(itertools.chain(signs, kems, zip(nikes, itertools.repeat(0))), start=1)}
+oids = {var: i for (i, (var, _)) in enumerate(itertools.chain(signs, kems, zip(map(lambda x: x.lower(), nikes), nikes)), start=1)}
 
 
 def get_oid(algorithm):
