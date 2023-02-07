@@ -11,22 +11,20 @@ signs = [
     ("dilithium5", "Dilithium5"),
     ("falcon512", "Falcon512"),
     ("falcon1024", "Falcon1024"),
-    ("rainbowiclassic", "RainbowIClassic"),
-    ("rainbowicircumzenithal", "RainbowICircumzenithal"),
-    ("rainbowicompressed", "RainbowICompressed"),
-    ("rainbowiiiclassic", "RainbowIiiClassic"),
-    ("rainbowiiicircumzenithal", "RainbowIiiCircumzenithal"),
-    ("rainbowiiicompressed", "RainbowIiiCompressed"),
-    ("rainbowvclassic", "RainbowVClassic"),
-    ("rainbowvcircumzenithal", "RainbowVCircumzenithal"),
-    ("rainbowvcompressed", "RainbowVCompressed"),
-    *[(sphincs.lower(), sphincs) for sphincs in (
-        f"Sphincs{hash}{size}{fs}{kind}"
-        for hash in ("Haraka", "Sha256", "Shake256")
-        for size in ("128", "192", "256")
-        for fs in ("f", "s")
-        for kind in ("Simple", "Robust")
-    )],
+    *[
+        (sphincs.lower(), sphincs)
+        for sphincs in (
+            f"Sphincs{hash}{size}{fs}{kind}"
+            for hash in ("Haraka", "Sha256", "Shake256")
+            for size in ("128", "192", "256")
+            for fs in ("f", "s")
+            for kind in ("Simple", "Robust")
+        )
+    ],
+    *[
+        (f"pqov{size}", f"Pqov{size}")
+        for size in ("1616044", "25611244", "25618472", "25614496")
+    ],
     ("xmss", "XMSS"),
 ]
 
@@ -49,19 +47,7 @@ kems = [
             "8192128f",
         )
     ],
-    ("lightsaber", "Lightsaber"),
-    ("saber", "Saber"),
-    ("firesaber", "Firesaber"),
-    ("ntruhps2048509", "NtruHps2048509"),
-    ("ntruhps2048677", "NtruHps2048677"),
-    ("ntruhps4096821", "NtruHps4096821"),
-    ("ntruhrss701", "NtruHrss701"),
-    ("ntruprimentrulpr653", "NtruPrimeNtrulpr653"),
-    ("ntruprimentrulpr761", "NtruPrimeNtrulpr761"),
-    ("ntruprimentrulpr857", "NtruPrimeNtrulpr857"),
-    ("ntruprimesntrup653",  "NtruPrimeSntrup653"),
-    ("ntruprimesntrup761",  "NtruPrimeSntrup761"),
-    ("ntruprimesntrup857",  "NtruPrimeSntrup857"),
+    ("ntruprimesntrup761", "NtruPrimeSntrup761"),
     *[
         (f"frodokem{size}{alg}", f"FrodoKem{size.title()}{alg.title()}")
         for size in ("640", "976", "1344")
