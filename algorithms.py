@@ -16,15 +16,16 @@ signs: list[Tuple[str, str]] = [
         (sphincs.lower(), sphincs)
         for sphincs in (
             f"Sphincs{hash}{size}{fs}{kind}"
-            for hash in ("Haraka", "Sha256", "Shake256")
+            for hash in ("Haraka", "Sha2", "Shake")
             for size in ("128", "192", "256")
             for fs in ("f", "s")
             for kind in ("Simple", "Robust")
         )
     ],
     *[
-        (f"pqov{size}", f"Pqov{size}")
-        for size in ("1616044", "25611244", "25618472", "25614496")
+        (f"pqov{size}{variant}".lower(), f"Pqov{size}{variant}")
+        for size in ("1616064", "25611244", "25618472", "25624496")
+        for variant in ["Classic"]
     ],
     ("xmss", "XMSS"),
 ]
