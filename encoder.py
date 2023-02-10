@@ -448,10 +448,10 @@ def generate(
 
 
 def get_classic_certs():
-    shutil.copyfile("rsas-int/x25519/x25519.pub", "kem.pub")
-    shutil.copyfile("rsas-int/x25519/x25519.crt", "kem.crt")
-    shutil.copyfile("rsas-int/x25519/x25519.chain.crt", "kem.chain.crt")
-    shutil.copyfile("rsas-int/x25519/x25519.key", "kem.key")
+    shutil.copyfile("x25519/x25519.pub", "kem.pub")
+    shutil.copyfile("x25519/x25519.crt", "kem.crt")
+    shutil.copyfile("x25519/x25519.chain.crt", "kem.chain.crt")
+    shutil.copyfile("x25519/x25519.key", "kem.key")
     shutil.copyfile("rsas-int/pki/ca.crt", "signing-int.crt")
     shutil.copyfile("rsas-int/pki/ca.crt", "kem-int.crt")
     shutil.copyfile("rsas-root/pki/ca.crt", "signing-ca.crt")
