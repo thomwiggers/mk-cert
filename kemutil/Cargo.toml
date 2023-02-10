@@ -11,3 +11,4 @@ edition = "2018"
 [dependencies.oqs]
 git = "https://github.com/thomwiggers/liboqs-rust.git"
 branch = "dirty-thesis-benchmarks"
+features = ["non_portable"]
