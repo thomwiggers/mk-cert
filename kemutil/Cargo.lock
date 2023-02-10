@@ -183,7 +183,7 @@ checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 [[package]]
 name = "oqs"
 version = "0.7.999"
-source = "git+https://github.com/thomwiggers/liboqs-rust.git?branch=dirty-thesis-benchmarks#4a1394eed0296ed23e0b1ce9c648a01340ee1a28"
+source = "git+https://github.com/thomwiggers/liboqs-rust.git?branch=dirty-thesis-benchmarks#55ed2b03f3a65776076dc0e9b82b04d77a42663a"
 dependencies = [
  "cstr_core",
  "libc",
@@ -193,7 +193,7 @@ dependencies = [
 [[package]]
 name = "oqs-sys"
 version = "0.7.99"
-source = "git+https://github.com/thomwiggers/liboqs-rust.git?branch=dirty-thesis-benchmarks#4a1394eed0296ed23e0b1ce9c648a01340ee1a28"
+source = "git+https://github.com/thomwiggers/liboqs-rust.git?branch=dirty-thesis-benchmarks#55ed2b03f3a65776076dc0e9b82b04d77a42663a"
 dependencies = [
  "bindgen",
  "build-deps",
