@@ -1,13 +1,16 @@
+use oqs::sig::*;
+use std::env;
 use std::hint::black_box;
 use std::time::Instant;
 
-use oqs::sig::*;
-
 use signutil::alg;
 
-const ITERATIONS: u128 = 100;
-
 fn main() -> std::io::Result<()> {
+    let iterations: u128 = match env::var("ITERATIONS") {
+        Ok(val) => val.parse::<u128>().unwrap(),
+        Err(_) => 1000,
+    };
+
     let sigalg = Sig::new(alg).unwrap();
     assert!(alg.is_enabled());
     let (pk, sk) = sigalg.keypair().unwrap();
@@ -17,29 +20,29 @@ fn main() -> std::io::Result<()> {
 
     let keypair_time = {
         let start = Instant::now();
-        for _ in 0..ITERATIONS {
+        for _ in 0..iterations {
             let _ = black_box(sigalg.keypair());
         }
-        Instant::now().duration_since(start).as_micros() / ITERATIONS
+        Instant::now().duration_since(start).as_micros() / iterations
     };
 
     let signing_time = {
         let start = Instant::now();
-        for _ in 0..ITERATIONS {
+        for _ in 0..iterations {
             black_box(sigalg.sign(black_box(&message), &sk)).unwrap();
         }
-        Instant::now().duration_since(start).as_micros() / ITERATIONS
+        Instant::now().duration_since(start).as_micros() / iterations
     };
     let verify_time = {
         let start = Instant::now();
-        for _ in 0..ITERATIONS {
+        for _ in 0..iterations {
             let _ = black_box(sigalg.verify(black_box(&message), black_box(&signature), &pk));
         }
 
-        Instant::now().duration_since(start).as_micros() / ITERATIONS
+        Instant::now().duration_since(start).as_micros() / iterations
     };
     println!(
-        "{},{},{},{}",
+        "{{ \"name\": \"{}\", \"keypair\": {}, \"sign\": {}, \"verify\": {} }}",
         alg.name(),
         keypair_time,
         signing_time,
