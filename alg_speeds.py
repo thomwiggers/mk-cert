@@ -13,7 +13,10 @@ def update_results(algorithm, result):
         with open(resultfilename, "r") as fh:
             data = json.load(fh)
     else:
-        data = {}
+        data = {
+            "X25519": {"keypair": 26.886, "encapsulate": 102.922, "decapsulate": 75.444},
+            "RSA2048": {"keypair": -9999, "sign": 526, "verify": 16},
+        }
     data[algorithm] = result
     with open(resultfilename, "w") as fh:
         json.dump(data, fh)
