@@ -91,7 +91,7 @@ def set_up_algorithm(algorithm, type):
 
 
 def set_up_sign_algorithm(algorithm):
-    if algorithm != "XMSS":
+    if algorithm.startswith("XMSS"):
         content = f"pub use oqs::sig::Algorithm::{get_oqs_id(algorithm)} as alg;"
         with open("signutil/src/lib.rs", "w") as f:
             f.write(content)
@@ -104,14 +104,23 @@ def set_up_kem_algorithm(algorithm):
 
 
 def run_signutil(example, alg, *args):
-    if alg.lower() == "xmss":
+    features = []
+    if alg.lower().startswith("xmss"):
         cwd = "xmss-rs"
+        if '1' in alg:
+            features = ["--features level1"]
+        elif '3' in alg:
+            features = ["--features level3"]
+        elif '5' in alg:
+            features = ["--features level5"]
+        else:
+            raise Exception(f"Unexpected xmss variant {alg}")
     else:
         cwd = "signutil"
 
-    print(f"Running 'cargo run --example {example} {' '.join(args)}' in {cwd}")
+    print(f"Running 'cargo run --example {example} {features} {' '.join(args)}' in {cwd}")
     subprocess.run(
-        [*"cargo run --release --example".split(), example, *args],
+        [*"cargo run --release --example".split(), example, *features, *args],
         cwd=cwd,
         check=True,
         capture_output=False,
@@ -164,7 +173,7 @@ def get_kem_keys(_):
 
 def get_sig_keys(alg):
     run_signutil("keygen", alg)
-    if alg.lower() == "xmss":
+    if alg.lower().startswith("xmss"):
         with open("xmss-rs/publickey.bin", "rb") as f:
             pk = f.read()
         with open("xmss-rs/secretkey.bin", "rb") as f:

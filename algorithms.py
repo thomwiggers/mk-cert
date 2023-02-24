@@ -27,7 +27,9 @@ signs: list[Tuple[str, str]] = [
         for size in ("1616064", "25611244", "25618472", "25624496")
         for variant in ["Classic"]
     ],
-    ("xmss", "XMSS"),
+    ("xmss1", "XMSS1"),
+    ("xmss3", "XMSS3"),
+    ("xmss5", "XMSS5"),
 ]
 
 kems: list[Tuple[str, str]] = [
