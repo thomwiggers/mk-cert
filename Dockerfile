@@ -39,6 +39,12 @@ RUN echo "pub use oqs::kem::Algorithm::Kyber512 as thealgorithm;" > src/kem.rs
 RUN cargo update
 RUN cargo build --release --examples
 
+# Add source code
+COPY xmss-rs /usr/src/xmss-rs
+WORKDIR /usr/src/xmss-rs
+RUN cargo update
+run cargo build --release
+
 # # Add source code
 # COPY csidhutil /usr/src/csidhutil
 # # populate cargo build caches

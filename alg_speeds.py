@@ -8,20 +8,25 @@ subprocess.run("docker build -t mkcert-benchmarker .".split(), check=True, stdou
 
 resultfilename = Path("result.json")
 
+
+CLASSIC_DATA = {
+    "X25519": {"keypair": 26.886, "encapsulate": 102.922, "decapsulate": 75.444},
+    "RSA2048": {"keypair": "", "sign": 526, "verify": 16},
+}
+
 def update_results(algorithm, result):
     if resultfilename.exists():
         with open(resultfilename, "r") as fh:
             data = json.load(fh)
     else:
-        data = {
-            "X25519": {"keypair": 26.886, "encapsulate": 102.922, "decapsulate": 75.444},
-            "RSA2048": {"keypair": -9999, "sign": 526, "verify": 16},
-        }
+        data = {}
     data[algorithm] = result
+
     with open(resultfilename, "w") as fh:
-        json.dump(data, fh)
+        json.dump(data, fh, indent=2)
 
 def do_bench(type, algorithm):
+    print(f"Running benchmark for {algorithm}")
     result = subprocess.run(f"docker run --rm -e ITERATIONS=1 mkcert-benchmarker {type} {algorithm}".split(), capture_output=True, check=True)
     result = json.loads(result.stdout)
     update_results(algorithm, result)
@@ -32,14 +37,19 @@ if __name__ == "__main__":
     if resultfilename.exists():
         existing_results = json.loads(resultfilename.read_text())
 
+    for alg, results in CLASSIC_DATA.items():
+        update_results(alg, results)
+
     for _, algorithm in kems:
         if algorithm not in existing_results:
             do_bench("kem", algorithm)
 
     for _, algorithm in signs:
-        if algorithm.startswith("XMSS") or algorithm.startswith("Pqov"):
+        if algorithm.startswith("XMSS") and algorithm not in existing_results:
+            do_bench("xmss", algorithm)
+        elif algorithm.startswith("Pqov"):
             continue
-        if algorithm not in existing_results:
+        elif algorithm not in existing_results:
             do_bench("sign", algorithm)
 
     # for algorithm in nikes:
@@ -54,6 +64,6 @@ if __name__ == "__main__":
             for measurement, value in data.items():
                 if measurement == "name":
                     continue
-                fh.write(f"primitive_timings[\"{key}\"][\"{measurement}\"] = {value}\n")
+                fh.write(f"primitive_timings[\"{key}\"][\"{measurement}\"] = {value!r}\n")
 
 
