@@ -91,7 +91,7 @@ def set_up_algorithm(algorithm, type):
 
 
 def set_up_sign_algorithm(algorithm):
-    if algorithm.startswith("XMSS"):
+    if not algorithm.lower().startswith("xmss"):
         content = f"pub use oqs::sig::Algorithm::{get_oqs_id(algorithm)} as alg;"
         with open("signutil/src/lib.rs", "w") as f:
             f.write(content)
@@ -108,17 +108,17 @@ def run_signutil(example, alg, *args):
     if alg.lower().startswith("xmss"):
         cwd = "xmss-rs"
         if '1' in alg:
-            features = ["--features level1"]
+            features = ["--features", "level1"]
         elif '3' in alg:
-            features = ["--features level3"]
+            features = ["--features", "level3"]
         elif '5' in alg:
-            features = ["--features level5"]
+            features = ["--features", "level5"]
         else:
             raise Exception(f"Unexpected xmss variant {alg}")
     else:
         cwd = "signutil"
 
-    print(f"Running 'cargo run --example {example} {features} {' '.join(args)}' in {cwd}")
+    print(f"Running 'cargo run --example {example} {' '.join(features)} {' '.join(args)}' in {cwd}")
     subprocess.run(
         [*"cargo run --release --example".split(), example, *features, *args],
         cwd=cwd,
