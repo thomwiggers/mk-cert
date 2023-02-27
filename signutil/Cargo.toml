@@ -9,5 +9,5 @@ edition = "2018"
 [dependencies]
 
 [dependencies.oqs]
-git = "https://github.com/open-quantum-safe/liboqs-rust.git"
-branch = "main"
+git = "https://github.com/thomwiggers/liboqs-rust.git
+branch = "dirty-oqs-avx2-rainbow"
