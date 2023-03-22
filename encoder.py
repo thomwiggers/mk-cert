@@ -130,7 +130,7 @@ def run_signutil(example, alg, *args):
 
 def get_keys(type, algorithm):
     if type == "kem":
-        return get_kem_keys(algorithm)
+        return get_kem_keys()
     elif type == "sign":
         return get_sig_keys(algorithm)
     elif type == "nike":
@@ -138,6 +138,12 @@ def get_keys(type, algorithm):
 
 
 def get_csidh_keys(alg):
+    # handle CTIDH paper impl different
+    if alg in ("ctidh511", "ctidh512", "ctidh1024", "ctidh2048"):
+        with open("kemutil/src/kem.rs", "w") as fh:
+            fh.write(f"pub use csidh_rust::{alg} as thealgorithm;")
+        return get_kem_keys(feature="csidh")
+
     with open("csidhutil/src/instance.rs", "w") as fh:
         fh.write(textwrap.dedent(f"""
         pub use secsidh::{alg} as csidh;
@@ -156,9 +162,9 @@ def get_csidh_keys(alg):
     return (pk, sk)
 
 
-def get_kem_keys(_):
+def get_kem_keys(*, feature="oqs"):
     subprocess.run(
-        ["cargo", "run", "--release"],
+        ["cargo", "run", "--release", "--features", feature],
         cwd="kemutil",
         check=True,
         env=subenv,

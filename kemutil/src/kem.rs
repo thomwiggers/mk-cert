@@ -1,1 +1,1 @@
-pub use oqs::kem::Algorithm::Kyber512 as thealgorithm;
+pub use csidh_rust::ctidh512 as thealgorithm;

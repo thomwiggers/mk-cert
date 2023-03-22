@@ -64,6 +64,8 @@ kems: list[Tuple[str, str]] = [
 ]
 
 nikes: list[str] = [
+    "ctidh512",
+    "ctidh1024",
     "CSIDH2047k221",
     "CSIDH4095k256",
     "CSIDH5119k234",

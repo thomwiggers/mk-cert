@@ -3,6 +3,7 @@ use std::io::prelude::*;
 
 mod kem;
 
+#[cfg(feature = "oqs")]
 mod doingit {
     use crate::kem::thealgorithm;
     use oqs::kem::*;
@@ -10,6 +11,15 @@ mod doingit {
         let alg = Kem::new(thealgorithm).unwrap();
         let (pk, sk) = alg.keypair().unwrap();
         (pk.into_vec(), sk.into_vec())
+    }
+}
+
+#[cfg(feature = "csidh")]
+mod doingit {
+    use crate::kem::thealgorithm;
+    pub fn do_keypair() -> (Vec<u8>, Vec<u8>) {
+        let (pk, sk) = thealgorithm::keypair();
+        (pk.as_ref().to_vec(), sk.as_ref().to_vec())
     }
 }
 
