@@ -135,6 +135,7 @@ def get_keys(type, algorithm):
         return get_sig_keys(algorithm)
     elif type == "nike":
         return get_csidh_keys(algorithm)
+    assert False, "Unreachable"
 
 
 def get_csidh_keys(alg):
@@ -149,7 +150,7 @@ def get_csidh_keys(alg):
         pub use secsidh::{alg} as csidh;
         """))
     subprocess.run(
-        ["cargo", "run", "--release"],
+        ["cargo", "run", "--release", "--features", "secsidh"],
         cwd="csidhutil",
         check=True,
         env=subenv,
@@ -559,6 +560,7 @@ if __name__ == "__main__":
             crt_base = "kem"
             alg_type = "kem"
         else:
+            print("Just kidding, CSIDH")
             crt_base = "csidh"
             alg_type = "nike"
 
@@ -603,6 +605,7 @@ if __name__ == "__main__":
     if client_alg:
         print("Generating client cert")
         client_alg = client_alg.lower()
+        assert client_sigalg is not None
         client_sigalg = client_sigalg.lower()
         assert is_sigalg(client_sigalg), client_sigalg
 

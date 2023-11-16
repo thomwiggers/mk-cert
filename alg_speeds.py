@@ -52,8 +52,9 @@ if __name__ == "__main__":
         elif algorithm not in existing_results:
             do_bench("sign", algorithm)
 
-    # for algorithm in nikes:
-    #     subprocess.run(f"docker run --rm mkcert-benchmarker csidh {algorithm}".split(), check=True)
+    for algorithm in nikes:
+        if algorithm not in existing_results:
+            do_bench("csidh", algorithm)
 
     existing_results = json.loads(resultfilename.read_text())
     with open("primitive_timings.lua", "w") as fh:

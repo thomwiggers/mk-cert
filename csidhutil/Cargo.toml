@@ -6,4 +6,5 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-secsidh = { path = "../../secsidh-rs/secsidh" }
+secsidh = { git = "https://github.com/kemtls-secsidh/secsidh.git", tag = "oct-2023", optional = true}
+csidh-rust = { git = "https://github.com/thomwiggers/csidh-rust.git", branch = "ctidh", optional=true}

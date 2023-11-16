@@ -36,8 +36,9 @@ COPY kemutil /usr/src/kemutil
 # populate cargo build caches
 WORKDIR /usr/src/kemutil
 RUN echo "pub use oqs::kem::Algorithm::Kyber512 as thealgorithm;" > src/kem.rs
+
 RUN cargo update
-RUN cargo build --release --examples
+RUN cargo build --features oqs --release --examples
 
 # Add source code
 COPY xmss-rs /usr/src/xmss-rs
@@ -46,12 +47,12 @@ RUN cargo update
 run cargo build --release
 
 # # Add source code
-# COPY csidhutil /usr/src/csidhutil
-# # populate cargo build caches
-# WORKDIR /usr/src/csidhutil
-# RUN echo "pub use secsidh::csidh2047k221 as csidh;" > src/instance.rs
-# RUN cargo update
-# RUN cargo build --release --examples
+COPY csidhutil /usr/src/csidhutil
+# populate cargo build caches
+WORKDIR /usr/src/csidhutil
+RUN echo "pub use csidh_rust::ctidh512 as csidh;" > src/instance.rs
+RUN cargo update
+RUN cargo build --release --features csidh-rust --example speed
 
 WORKDIR /usr/src
 # Set up script

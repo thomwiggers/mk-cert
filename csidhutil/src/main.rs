@@ -1,13 +1,9 @@
 use std::io::prelude::*;
 use std::fs::File;
 
-mod instance;
-use instance::csidh;
-
-
 
 fn main() -> std::io::Result<()> {
-    let (pk, sk) = csidh::keygen();
+    let (pk, sk) = csidhutil::keygen();
 
     let mut pubkeyfile = File::create("publickey.bin")?;
     let mut seckeyfile = File::create("secretkey.bin")?;
