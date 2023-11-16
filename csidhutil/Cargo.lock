@@ -307,7 +307,7 @@ dependencies = [
 [[package]]
 name = "secsidh"
 version = "0.1.0"
-source = "git+https://github.com/kemtls-secsidh/secsidh.git?tag=oct-2023#2ac925cd7158cf92c4d7fc0222799f28f749cbb1"
+source = "git+https://github.com/kemtls-secsidh/secsidh.git?tag=oct-2023#da4c8a3de9b111eba477cebfb6356915bee1da98"
 dependencies = [
  "libc",
  "paste",
@@ -317,7 +317,7 @@ dependencies = [
 [[package]]
 name = "secsidh-sys"
 version = "0.1.0"
-source = "git+https://github.com/kemtls-secsidh/secsidh.git?tag=oct-2023#2ac925cd7158cf92c4d7fc0222799f28f749cbb1"
+source = "git+https://github.com/kemtls-secsidh/secsidh.git?tag=oct-2023#da4c8a3de9b111eba477cebfb6356915bee1da98"
 dependencies = [
  "bindgen",
  "build-deps",
