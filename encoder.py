@@ -23,9 +23,6 @@ if "RUST_MIN_STACK" not in subenv:
     subenv["RUST_MIN_STACK"] = str(20 * 1024 * 1024)
 
 
-resource.setrlimit(
-    resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY)
-)
 
 from algorithms import kems, signs, nikes, get_oid, get_oqs_id, is_sigalg, is_kem
 
