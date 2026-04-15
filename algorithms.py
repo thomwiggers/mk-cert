@@ -7,7 +7,9 @@ from typing import Tuple
 # but both sides should be equal up to case.
 
 signs: list[Tuple[str, str]] = [
-    ("dilithium2", "Dilithium2"),
+    ("mldsa44", "MlDsa44"),
+    ("mldsa65", "MlDsa65"),
+    ("mldsa87", "MlDsa87"),
     ("xmss1", "XMSS1"),
     ("xmss3", "XMSS3"),
     ("xmss5", "XMSS5"),
