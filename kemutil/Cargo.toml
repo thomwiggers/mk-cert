@@ -12,8 +12,7 @@ csidh = ["csidh-rust"]
 [dependencies]
 
 [dependencies.oqs]
-git = "https://github.com/thomwiggers/liboqs-rust.git"
-branch = "dirty-thesis-benchmarks"
+path = "../../oqs-rs/oqs"
 default-features = false
 features = ["non_portable", "kems"]
 optional = true

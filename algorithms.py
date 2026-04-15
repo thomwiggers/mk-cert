@@ -8,6 +8,11 @@ from typing import Tuple
 
 signs: list[Tuple[str, str]] = [
     ("dilithium2", "Dilithium2"),
+    ("xmss1", "XMSS1"),
+    ("xmss3", "XMSS3"),
+    ("xmss5", "XMSS5"),
+]
+signs_ = [
     ("dilithium3", "Dilithium3"),
     ("dilithium5", "Dilithium5"),
     ("falcon512", "Falcon512"),
@@ -27,16 +32,15 @@ signs: list[Tuple[str, str]] = [
         for size in ("1616064", "25611244", "25618472", "25624496")
         for variant in ["Classic"]
     ],
-    ("xmss1", "XMSS1"),
-    ("xmss3", "XMSS3"),
-    ("xmss5", "XMSS5"),
 ]
 
 kems: list[Tuple[str, str]] = [
-    ("kyber512", "Kyber512"),
-    ("kyber768", "Kyber768"),
-    ("kyber1024", "Kyber1024"),
-    *[
+    ("mlkem512", "MlKem512"),
+    ("mlkem768", "MlKem768"),
+    ("mlkem1024", "MlKem1024"),
+]
+
+rest_ = [    *[
         (f"classicmceliece{size}{variant}", f"ClassicMcEliece{size}{variant}")
         for size in (
             "348864",
@@ -65,6 +69,8 @@ kems: list[Tuple[str, str]] = [
 
 nikes: list[str] = [
     "ctidh512",
+]
+nikes_ = [
     "ctidh1024",
     "CSIDH2047m1l226",
     "CSIDH4095m27l262",
@@ -80,6 +86,11 @@ nikes: list[str] = [
     "CTIDH9215m85l389",
 ]
 
+hybrids = [
+    ("x25519mlkem768", "X25519MLKEM768"),
+    ("secp256r1mlkem768", "secp256r1MLKEM768"),
+    ("secp384r1mlkem1024", "secp384r1MLKEM1024"),
+]
 
 oids: dict[str, int] = {
     var: i
@@ -104,4 +115,4 @@ def is_sigalg(algorithm: str) -> bool:
 
 
 def is_kem(algorithm: str) -> bool:
-    return algorithm.lower() in dict(kems).keys()
+    return algorithm.lower() in dict(kems).keys() or algorithm.lower() in dict(hybrids)
