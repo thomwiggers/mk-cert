@@ -310,7 +310,7 @@ def write_tbs_certificate(
     now = datetime.utcnow()
     encoder.enter(asn1.Numbers.Sequence)  # Validity
     encoder.write(print_date(now), asn1.Numbers.UTCTime)
-    encoder.write(print_date(now + timedelta(days=9000)), asn1.Numbers.UTCTime)
+    encoder.write(print_date(now + timedelta(days=900)), asn1.Numbers.UTCTime)
     encoder.leave()  # Validity
 
     # Subject
