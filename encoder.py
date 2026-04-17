@@ -487,9 +487,9 @@ def get_classic_certs():
 
 
 if __name__ == "__main__":
-    root_sign_algorithm = os.environ.get("ROOT_SIGALG", "dilithium2").lower()
-    intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "dilithium2").lower()
-    leaf_auth_algorithm = os.environ.get("LEAF_ALG", "dilithium2").lower()
+    root_sign_algorithm = os.environ.get("ROOT_SIGALG", "mldsa44").lower()
+    intermediate_sign_algorithm = os.environ.get("INT_SIGALG", "mldsa44").lower()
+    leaf_auth_algorithm = os.environ.get("LEAF_ALG", "mldsa44").lower()
     client_alg = os.environ.get("CLIENT_ALG", None)
     client_sigalg = os.environ.get("CLIENT_CA_ALG", None)
     if leaf_auth_algorithm in ("x25519", "rsa2048"):
