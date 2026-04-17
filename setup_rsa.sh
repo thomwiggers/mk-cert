@@ -1,4 +1,4 @@
-#!/bin/zsh -e
+#!/bin/bash -e
 
 EASYRSA_VERSION=3.1.2
 EASYRSA=EasyRSA-${EASYRSA_VERSION}
